@@ -3,9 +3,15 @@
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="TosVolume.cpp" />
+    <ClCompile Include="RawVolume.cpp" />
+    <ClCompile Include="Log.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="TosVolume.hpp" />
+    <ClInclude Include="RawVolume.hpp" />
+    <ClInclude Include="generator.hpp" />
+    <ClInclude Include="Ex.hpp" />
+    <ClInclude Include="Log.hpp" />
   </ItemGroup>
 </Project>
