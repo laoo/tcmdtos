@@ -22,6 +22,11 @@ TosVolume::TosVolume()
 {
 }
 
+std::span<std::shared_ptr<Partition>const> TosVolume::partitions() const
+{
+  return { mPartitions.data(), mPartitions.size() };
+}
+
 void TosVolume::parseRootSector()
 {
   auto rootSector = mRawVolume->readSectors( 0, 1 );

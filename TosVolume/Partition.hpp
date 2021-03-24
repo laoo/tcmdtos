@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DirectoryEntry.hpp"
+#include "generator.hpp"
 
 class RawVolume;
 
@@ -46,6 +47,9 @@ public:
   Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume );
   virtual ~Partition() = default;
 
+  std::string getLabel() const;
+
+  cppcoro::generator<DirectoryEntry> rootDir() const;
 
 private:
 #pragma pack(push, 1)
@@ -65,7 +69,7 @@ private:
   };
 #pragma pack(pop)
 
-protected:
+private:
   std::shared_ptr<RawVolume> mRawVolume;
   uint32_t mPosBoot;
   uint32_t mPosFat;

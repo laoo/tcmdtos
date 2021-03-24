@@ -60,3 +60,49 @@ Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<
   mPosData = mPosDir + mDirSize;
 }
 
+std::string Partition::getLabel() const
+{
+  for ( auto const & dir : rootDir() )
+  {
+    auto name = dir.getName();
+    if ( dir.isLabel() )
+    {
+      auto name = dir.getName();
+      auto ext = dir.getExt();
+      std::string label{ name.data(), name.size() };
+      if ( !ext.empty() )
+      {
+        label.append( "." );
+        label.append( ext, 0, ext.size() );
+      }
+
+      return label;
+    }
+  }
+
+  return {};
+}
+
+cppcoro::generator<DirectoryEntry> Partition::rootDir() const
+{
+  auto rootDir = mRawVolume->readSectors( mPosDir, mDirSize );
+  size_t dirs = mDirSize * RawVolume::RAW_SECTOR_SIZE / sizeof( TOSDir );
+
+  for ( size_t i = 0; i < dirs; ++i )
+  {
+    TOSDir const* dir = reinterpret_cast<TOSDir const*>( rootDir.data() + i * sizeof( TOSDir ) );
+
+    if ( dir->fname[0] != 0 )
+    {
+      if ( dir->fname[0] != (char)0xe5 )
+      {
+        co_yield DirectoryEntry{ *dir };
+      }
+    }
+    else
+    {
+      co_return;
+    }
+  }
+}
+

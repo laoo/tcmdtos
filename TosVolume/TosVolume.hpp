@@ -8,6 +8,8 @@ public:
   TosVolume( std::filesystem::path const & path );
   TosVolume();
 
+  std::span<std::shared_ptr<Partition> const> partitions() const;
+
 private:
 
   static constexpr size_t pinfoOffset = 0x1c6;
