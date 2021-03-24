@@ -71,10 +71,10 @@ private:
 
 private:
   std::shared_ptr<RawVolume> mRawVolume;
-  uint32_t mPosBoot;
-  uint32_t mPosFat;
-  uint32_t mPosDir;
-  uint32_t mPosData;
+  uint32_t mBootPos;
+  uint32_t mFATPos;
+  uint32_t mDirPos;
+  uint32_t mDataPos;
   uint32_t mDirSize;
   uint32_t mLogicalSectorSize;
   uint32_t mClusterSize;

@@ -16,7 +16,7 @@ DirectoryEntry::DirectoryEntry( TOSDir const & dir )
   std::copy( dir.fname.cbegin(), dir.fname.cend(), mName.begin() );
   std::copy( dir.fext.cbegin(), dir.fext.cend(), mExt.begin() );
   if ( mName[0] == 0x05 )
-    mName[0] = 0xe5;
+    mName[0] = (char)0xe5;
 }
 
 uint32_t DirectoryEntry::getYear() const

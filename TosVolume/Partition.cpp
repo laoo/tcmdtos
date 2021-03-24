@@ -42,8 +42,8 @@ uint32_t PInfo::partitionSize() const
 
 Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume ) : mRawVolume{ std::move( rawVolume ) }
 {
-  mPosBoot = partition.partitionOffset() + offset;
-  auto bootSector = mRawVolume->readSectors( mPosBoot, 1 );
+  mBootPos = partition.partitionOffset() + offset;
+  auto bootSector = mRawVolume->readSectors( mBootPos, 1 );
 
   BPB const& bpb{ *reinterpret_cast<BPB const*>( bootSector.data() + 0x0b ) };
 
@@ -55,9 +55,9 @@ Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<
   mFATSize = mLogicalSectorSize * bpb.spf;
   mDirSize = bpb.ndirs * sizeof( TOSDir ) / RawVolume::RAW_SECTOR_SIZE;
 
-  mPosFat = mPosBoot + bpb.res * mLogicalSectorSize;
-  mPosDir = mPosFat + mFATSize * bpb.nfats;
-  mPosData = mPosDir + mDirSize;
+  mFATPos = mBootPos + bpb.res * mLogicalSectorSize;
+  mDirPos = mFATPos + mFATSize * bpb.nfats;
+  mDataPos = mDirPos + mDirSize;
 }
 
 std::string Partition::getLabel() const
@@ -85,7 +85,7 @@ std::string Partition::getLabel() const
 
 cppcoro::generator<DirectoryEntry> Partition::rootDir() const
 {
-  auto rootDir = mRawVolume->readSectors( mPosDir, mDirSize );
+  auto rootDir = mRawVolume->readSectors( mDirPos, mDirSize );
   size_t dirs = mDirSize * RawVolume::RAW_SECTOR_SIZE / sizeof( TOSDir );
 
   for ( size_t i = 0; i < dirs; ++i )
