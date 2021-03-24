@@ -6,6 +6,7 @@
     <ClCompile Include="RawVolume.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="Partition.cpp" />
+    <ClCompile Include="DirectoryEntry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.hpp" />
@@ -15,5 +16,6 @@
     <ClInclude Include="Ex.hpp" />
     <ClInclude Include="Log.hpp" />
     <ClInclude Include="Partition.hpp" />
+    <ClInclude Include="DirectoryEntry.hpp" />
   </ItemGroup>
 </Project>

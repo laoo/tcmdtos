@@ -90,6 +90,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DirectoryEntry.hpp" />
     <ClInclude Include="Partition.hpp" />
     <ClInclude Include="Ex.hpp" />
     <ClInclude Include="generator.hpp" />
@@ -99,6 +100,7 @@
     <ClInclude Include="TosVolume.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DirectoryEntry.cpp" />
     <ClCompile Include="Partition.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="pch.cpp">

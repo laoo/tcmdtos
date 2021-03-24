@@ -1,5 +1,7 @@
 #pragma once
 
+#include "DirectoryEntry.hpp"
+
 class RawVolume;
 
 class PInfo
@@ -24,11 +26,26 @@ public:
   uint32_t partitionSize() const;
 };
 
+#pragma pack(push, 1)
+struct TOSDir
+{
+  std::array<char, 8> fname;
+  std::array<char, 3> fext;
+  uint8_t attrib;
+  std::array<uint8_t, 10> res;
+  uint16_t ftime;
+  uint16_t fdate;
+  uint16_t scluster;
+  uint32_t fsize;
+};
+#pragma pack(pop)
+
 class Partition
 {
 public:
   Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume );
   virtual ~Partition() = default;
+
 
 private:
 #pragma pack(push, 1)
@@ -46,23 +63,13 @@ private:
     uint16_t nheads;
     uint16_t nhid;
   };
-
-  struct Dir
-  {
-    std::array<char, 8> fname;
-    std::array<char, 3> fext;
-    uint8_t attrib;
-    std::array<uint8_t, 10> res;
-    uint16_t ftime;
-    uint16_t fdate;
-    uint16_t scluster;
-    uint32_t fsize;
-  };
 #pragma pack(pop)
 
 protected:
   std::shared_ptr<RawVolume> mRawVolume;
+  uint32_t mPosBoot;
   uint32_t mPosFat;
   uint32_t mPosDir;
   uint32_t mPosData;
+  uint32_t mDirs;
 };

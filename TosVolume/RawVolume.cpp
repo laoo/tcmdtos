@@ -21,25 +21,20 @@ std::shared_ptr<RawVolume> RawVolume::openImageFile( std::filesystem::path const
   }
 }
 
-std::span<uint8_t const,512> RawVolume::readSector( uint32_t sector )
+std::string RawVolume::readSectors( uint32_t sector, uint32_t count )
 {
+  LARGE_INTEGER sectorOffset;
+  sectorOffset.QuadPart = sector * RAW_SECTOR_SIZE;
+
   OVERLAPPED overlapped = {};
+  overlapped.Offset = sectorOffset.LowPart;
+  overlapped.OffsetHigh = sectorOffset.HighPart;
 
-  int64_t offset = sector * RAW_SECTOR_SIZE;
+  std::string result;
+  result.resize( count * RAW_SECTOR_SIZE );
 
-  if ( offset >= mSectorOffset.QuadPart && offset < mSectorOffset.QuadPart + (int64_t)mSector.size() )
-  {
-    return std::span<uint8_t const, RAW_SECTOR_SIZE>{ mSector.data() + ( offset - mSectorOffset.QuadPart ), RAW_SECTOR_SIZE };
-  }
 
-  assert( mSector.size() >= RAW_SECTOR_SIZE );
-
-  mSectorOffset.QuadPart = offset & mOffsetMask;
-  
-  overlapped.Offset = mSectorOffset.LowPart;
-  overlapped.OffsetHigh = mSectorOffset.HighPart;
-
-  if ( !ReadFile( mHandle, mSector.data(), (DWORD)mSector.size(), NULL, &overlapped ) )
+  if ( !ReadFile( mHandle, result.data(), (DWORD)result.size(), NULL, &overlapped ) )
   {
     auto err = GetLastError();
     if ( err != ERROR_IO_PENDING )
@@ -55,7 +50,7 @@ std::span<uint8_t const,512> RawVolume::readSector( uint32_t sector )
     throw Ex{} << "Error reading from input file: " << GetLastError();
   }
 
-  return std::span<uint8_t const, RAW_SECTOR_SIZE>{ mSector.data() + ( offset - mSectorOffset.QuadPart ), RAW_SECTOR_SIZE };
+  return result;
 }
 
 RawVolume::RawVolume( wchar_t volume )
@@ -70,9 +65,5 @@ RawVolume::RawVolume( std::filesystem::path const & path )
   {
     throw Ex{} << "Error opening input file: " << GetLastError();
   }
-
-  mSector.resize( RAW_SECTOR_SIZE );
-  mOffsetMask = ~( RAW_SECTOR_SIZE - 1 );
-  mSectorOffset.QuadPart = std::numeric_limits<LONGLONG>::max();
 }
 

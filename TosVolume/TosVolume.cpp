@@ -24,12 +24,9 @@ TosVolume::TosVolume()
 
 void TosVolume::parseRootSector()
 {
+  auto rootSector = mRawVolume->readSectors( 0, 1 );
 
-  auto rootSector = mRawVolume->readSector( 0 );
-
-  PInfo infos[4];
-
-  std::memcpy( &infos, reinterpret_cast<PInfo const *>( rootSector.data() + pinfoOffset ), sizeof( PInfo ) * 4 );
+  std::span< PInfo const, 4> infos{ reinterpret_cast<PInfo const *>( rootSector.data() + pinfoOffset ), 4 };
 
   for ( auto const & info : infos )
   {
@@ -70,11 +67,9 @@ void TosVolume::parseXGMPartition( PInfo const & partition, uint32_t offset )
 {
   for ( ;; )
   {
-    auto extendedRootSector = mRawVolume->readSector( offset );
+    auto extendedRootSector = mRawVolume->readSectors( offset, 1 );
 
-    PInfo infos[4];
-
-    std::memcpy( &infos, reinterpret_cast<PInfo const *>( extendedRootSector.data() + pinfoOffset ), sizeof( PInfo ) * 4 );
+    std::span< PInfo const, 4> infos{ reinterpret_cast<PInfo const *>( extendedRootSector.data() + pinfoOffset ), 4 };
 
     auto it = std::find_if( std::begin( infos ), std::end( infos ), []( PInfo const & info )
     {
