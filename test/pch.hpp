@@ -7,6 +7,7 @@
 #include <exception>
 #include <iostream>
 #include <span>
+#include <stdlib.h>
 
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN

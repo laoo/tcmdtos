@@ -1,6 +1,8 @@
 #include "pch.hpp"
 #include "TosVolume.hpp"
 #include "RawVolume.hpp"
+#include "GEMPartition.hpp"
+#include "BGMPartition.hpp"
 #include "Ex.hpp"
 
 TosVolume::TosVolume( std::filesystem::path const & path ) : mRawVolume{ RawVolume::openImageFile( path ) }
@@ -8,7 +10,14 @@ TosVolume::TosVolume( std::filesystem::path const & path ) : mRawVolume{ RawVolu
   if ( !mRawVolume )
     throw Ex{} << "Error opening image file " << path.string();
 
-  parseRootSector();
+  try
+  {
+    parseRootSector();
+  }
+  catch ( Ex const & ex )
+  {
+    throw Ex{} << "Error parsing image file " << path.string() << ": " << ex.what();
+  }
 }
 
 TosVolume::TosVolume()
@@ -17,59 +26,94 @@ TosVolume::TosVolume()
 
 void TosVolume::parseRootSector()
 {
-  static constexpr size_t pinfoOffset = 0x1c6;
 
   auto rootSector = mRawVolume->readSector( 0 );
 
-  std::span<PInfo const, 4> infos{ reinterpret_cast<PInfo const *>( rootSector.data() + pinfoOffset ), 4 };
+  PInfo infos[4];
+
+  std::memcpy( &infos, reinterpret_cast<PInfo const *>( rootSector.data() + pinfoOffset ), sizeof( PInfo ) * 4 );
 
   for ( auto const & info : infos )
   {
     if ( info.exists() )
     {
-      auto type = info.type();
-      int x = 42;
-
+      switch ( info.type() )
+      {
+      case PInfo::Type::GEM:
+        parseGEMPartition( info );
+        break;
+      case PInfo::Type::BGM:
+        parseBGMPartition( info );
+        break;
+      case PInfo::Type::XGM:
+        parseXGMPartition( info );
+        break;
+      default:
+        throw Ex{};
+      }
     }
   }
 
-
-  return;
+  if ( mPartitions.empty() )
+    throw Ex{} << "No defined partitions";
 }
 
-bool TosVolume::PInfo::exists() const
+void TosVolume::parseGEMPartition( PInfo const & partition )
 {
-  return ( statusAndName & 1 ) != 0;
+  mPartitions.push_back( std::make_shared<GEMPartition>( partition ) );
 }
 
-TosVolume::PInfo::Type TosVolume::PInfo::type() const
+void TosVolume::parseBGMPartition( PInfo const & partition )
 {
-  std::string_view name{ reinterpret_cast<char const *>( &statusAndName ) + 1, 3 };
-
-  if ( name == "GEM" )
-  {
-    return Type::GEM;
-  }
-  else if ( name == "BGM" )
-  {
-    return Type::BGM;
-  }
-  else if ( name == "XGM" )
-  {
-    return Type::XGM;
-  }
-  else
-  {
-    return Type::UNKNOWN;
-  }
+  mPartitions.push_back( std::make_shared<BGMPartition>( partition ) );
 }
 
-uint32_t TosVolume::PInfo::partitionOffset() const
+void TosVolume::parseXGMPartition( PInfo const & partition )
 {
-  return uint32_t();
+  auto extendedRootSector = mRawVolume->readSector( partition.partitionOffset() );
+
+  PInfo infos[4];
+
+  std::memcpy( &infos, reinterpret_cast<PInfo const *>( extendedRootSector.data() + pinfoOffset ), sizeof( PInfo ) * 4 );
+
+  auto it = std::find_if( std::begin( infos ), std::end( infos ), []( PInfo const & info )
+  {
+    return info.exists();
+  } );
+
+  if ( it == std::end( infos ) )
+    return;
+
+  switch ( it->type() )
+  {
+  case PInfo::Type::GEM:
+    parseGEMPartition( *it );
+    break;
+  case PInfo::Type::BGM:
+    parseBGMPartition( *it );
+    break;
+  case PInfo::Type::XGM:
+    throw Ex{} << "Unexpected XGM partition";
+    break;
+  default:
+    throw Ex{};
+  }
+
+  it += 1;
+
+  if ( it == std::end( infos ) )
+    return;
+
+  if ( it->exists() )
+  {
+    if ( it->type() == PInfo::Type::XGM )
+    {
+      parseXGMPartition( *it );
+    }
+    else
+    {
+      throw Ex{} << "XGM partition expected";
+    }
+  }
 }
 
-uint32_t TosVolume::PInfo::partitionSize() const
-{
-  return uint32_t();
-}

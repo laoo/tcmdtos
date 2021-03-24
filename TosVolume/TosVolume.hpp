@@ -1,6 +1,7 @@
 #pragma once
 
 class RawVolume;
+#include "BasePartition.hpp"
 
 class TosVolume
 {
@@ -10,31 +11,28 @@ public:
 
 private:
 
-  class PInfo
+  static constexpr size_t pinfoOffset = 0x1c6;
+
+#pragma pack(push, 1)
+  struct BPB
   {
-    uint32_t statusAndName;
-    uint32_t offset;
-    uint32_t size;
+    uint16_t bps;
+    uint8_t spc;
+    uint16_t res;
+    uint8_t nfats;
+    uint16_t ndirs;
 
-  public:
 
-    enum struct Type
-    {
-      UNKNOWN,
-      GEM,
-      BGM,
-      XGM
-    };
-
-    bool exists() const;
-    Type type() const;
-    uint32_t partitionOffset() const;
-    uint32_t partitionSize() const;
   };
+#pragma pack(pop)
 
 private:
   void parseRootSector();
+  void parseGEMPartition( PInfo const& partition );
+  void parseBGMPartition( PInfo const& partition );
+  void parseXGMPartition( PInfo const& partition );
 
 private:
   std::shared_ptr<RawVolume> mRawVolume;
+  std::vector<std::shared_ptr<BasePartition>> mPartitions;
 };
