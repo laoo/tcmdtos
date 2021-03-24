@@ -11,6 +11,7 @@ public:
   static std::shared_ptr<RawVolume> openImageFile( std::filesystem::path const & path );
 
   std::string readSectors( uint32_t sector, uint32_t count );
+  void readSectors( uint32_t sector, uint32_t count, std::span<uint8_t> destination );
 
 private:
   RawVolume( wchar_t volume );

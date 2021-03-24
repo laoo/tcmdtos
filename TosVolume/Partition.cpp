@@ -2,6 +2,8 @@
 #include "Partition.hpp"
 #include "RawVolume.hpp"
 #include "Ex.hpp"
+#include "Log.hpp"
+#include "FAT.hpp"
 
 bool PInfo::exists() const
 {
@@ -42,6 +44,8 @@ uint32_t PInfo::partitionSize() const
 
 Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume ) : mRawVolume{ std::move( rawVolume ) }
 {
+  assert( mRawVolume );
+
   mBootPos = partition.partitionOffset() + offset;
   auto bootSector = mRawVolume->readSectors( mBootPos, 1 );
 
@@ -58,6 +62,9 @@ Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<
   mFATPos = mBootPos + bpb.res * mLogicalSectorSize;
   mDirPos = mFATPos + mFATSize * bpb.nfats;
   mDataPos = mDirPos + mDirSize;
+
+  mFAT = std::make_shared<FAT>( mFATPos, mFATSize );
+  mFAT->load( *mRawVolume );
 }
 
 std::string Partition::getLabel() const

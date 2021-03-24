@@ -4,6 +4,7 @@
 #include "generator.hpp"
 
 class RawVolume;
+class FAT;
 
 class PInfo
 {
@@ -71,6 +72,7 @@ private:
 
 private:
   std::shared_ptr<RawVolume> mRawVolume;
+  std::shared_ptr<FAT> mFAT;
   uint32_t mBootPos;
   uint32_t mFATPos;
   uint32_t mDirPos;

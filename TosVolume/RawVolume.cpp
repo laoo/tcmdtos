@@ -23,6 +23,16 @@ std::shared_ptr<RawVolume> RawVolume::openImageFile( std::filesystem::path const
 
 std::string RawVolume::readSectors( uint32_t sector, uint32_t count )
 {
+  std::string result;
+  result.resize( count * RAW_SECTOR_SIZE );
+
+  readSectors( sector, count, std::span<uint8_t>{ (uint8_t*)result.data(), result.size() } );
+
+  return result;
+}
+
+void RawVolume::readSectors( uint32_t sector, uint32_t count, std::span<uint8_t> destination )
+{
   LARGE_INTEGER sectorOffset;
   sectorOffset.QuadPart = sector * RAW_SECTOR_SIZE;
 
@@ -30,11 +40,10 @@ std::string RawVolume::readSectors( uint32_t sector, uint32_t count )
   overlapped.Offset = sectorOffset.LowPart;
   overlapped.OffsetHigh = sectorOffset.HighPart;
 
-  std::string result;
-  result.resize( count * RAW_SECTOR_SIZE );
+  if ( destination.size() != count * RAW_SECTOR_SIZE )
+    throw Ex{};
 
-
-  if ( !ReadFile( mHandle, result.data(), (DWORD)result.size(), NULL, &overlapped ) )
+  if ( !ReadFile( mHandle, destination.data(), (DWORD)destination.size(), NULL, &overlapped ) )
   {
     auto err = GetLastError();
     if ( err != ERROR_IO_PENDING )
@@ -49,8 +58,6 @@ std::string RawVolume::readSectors( uint32_t sector, uint32_t count )
   {
     throw Ex{} << "Error reading from input file: " << GetLastError();
   }
-
-  return result;
 }
 
 RawVolume::RawVolume( wchar_t volume )
