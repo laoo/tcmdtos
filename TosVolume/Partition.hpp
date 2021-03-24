@@ -71,5 +71,8 @@ protected:
   uint32_t mPosFat;
   uint32_t mPosDir;
   uint32_t mPosData;
-  uint32_t mDirs;
+  uint32_t mDirSize;
+  uint32_t mLogicalSectorSize;
+  uint32_t mClusterSize;
+  uint32_t mFATSize;
 };

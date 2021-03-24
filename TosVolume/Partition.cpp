@@ -47,25 +47,16 @@ Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<
 
   BPB const& bpb{ *reinterpret_cast<BPB const*>( bootSector.data() + 0x0b ) };
 
-  uint32_t sizLogicalSector = bpb.bps / RawVolume::RAW_SECTOR_SIZE; //in physical 
-
-  uint32_t cursor = mPosBoot + bpb.res * sizLogicalSector;
-  std::vector<uint32_t> posFats;
-
   if ( bpb.nfats < 1 )
     throw Ex{} << "No File Allocation Tables defined";
 
-  posFats.reserve( bpb.nfats );
-  for ( int i = 0; i < bpb.nfats; ++i )
-  {
-    posFats.push_back( cursor );
-    cursor += bpb.spf * sizLogicalSector;
-  }
+  mLogicalSectorSize = bpb.bps / RawVolume::RAW_SECTOR_SIZE; //in physical 
+  mClusterSize = mLogicalSectorSize * bpb.spc;
+  mFATSize = mLogicalSectorSize * bpb.spf;
+  mDirSize = bpb.ndirs * sizeof( TOSDir ) / RawVolume::RAW_SECTOR_SIZE;
 
-  mPosFat = posFats[0];
-
-  mPosDir = cursor;
-  mDirs = bpb.ndirs;
-  mPosData = cursor + mDirs * sizeof( TOSDir ) / RawVolume::RAW_SECTOR_SIZE;
+  mPosFat = mPosBoot + bpb.res * mLogicalSectorSize;
+  mPosDir = mPosFat + mFATSize * bpb.nfats;
+  mPosData = mPosDir + mDirSize;
 }
 
