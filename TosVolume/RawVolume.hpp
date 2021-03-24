@@ -4,13 +4,13 @@
 
 class RawVolume
 {
-  static constexpr uint64_t LOGICAL_SECTOR_SIZE = 512;
-
 public:
+  static constexpr uint64_t RAW_SECTOR_SIZE = 512;
+
   static cppcoro::generator<std::shared_ptr<RawVolume>> enumeratePhysicalVolumes();
   static std::shared_ptr<RawVolume> openImageFile( std::filesystem::path const& path );
 
-  std::span<uint8_t const, LOGICAL_SECTOR_SIZE> readSector( uint32_t sector );
+  std::span<uint8_t const, RAW_SECTOR_SIZE> readSector( uint32_t sector );
 
 private:
   RawVolume( wchar_t volume );

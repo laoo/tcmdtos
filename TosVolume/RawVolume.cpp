@@ -25,14 +25,14 @@ std::span<uint8_t const,512> RawVolume::readSector( uint32_t sector )
 {
   OVERLAPPED overlapped = {};
 
-  int64_t offset = sector * LOGICAL_SECTOR_SIZE;
+  int64_t offset = sector * RAW_SECTOR_SIZE;
 
   if ( offset >= mSectorOffset.QuadPart && offset < mSectorOffset.QuadPart + (int64_t)mSector.size() )
   {
-    return std::span<uint8_t const, LOGICAL_SECTOR_SIZE>{ mSector.data() + ( offset - mSectorOffset.QuadPart ), LOGICAL_SECTOR_SIZE };
+    return std::span<uint8_t const, RAW_SECTOR_SIZE>{ mSector.data() + ( offset - mSectorOffset.QuadPart ), RAW_SECTOR_SIZE };
   }
 
-  assert( mSector.size() >= LOGICAL_SECTOR_SIZE );
+  assert( mSector.size() >= RAW_SECTOR_SIZE );
 
   mSectorOffset.QuadPart = offset & mOffsetMask;
   
@@ -55,7 +55,7 @@ std::span<uint8_t const,512> RawVolume::readSector( uint32_t sector )
     throw Ex{} << "Error reading from input file: " << GetLastError();
   }
 
-  return std::span<uint8_t const, LOGICAL_SECTOR_SIZE>{ mSector.data() + ( offset - mSectorOffset.QuadPart ), LOGICAL_SECTOR_SIZE };
+  return std::span<uint8_t const, RAW_SECTOR_SIZE>{ mSector.data() + ( offset - mSectorOffset.QuadPart ), RAW_SECTOR_SIZE };
 }
 
 RawVolume::RawVolume( wchar_t volume )
@@ -71,8 +71,8 @@ RawVolume::RawVolume( std::filesystem::path const & path )
     throw Ex{} << "Error opening input file: " << GetLastError();
   }
 
-  mSector.resize( LOGICAL_SECTOR_SIZE );
-  mOffsetMask = ~( LOGICAL_SECTOR_SIZE - 1 );
+  mSector.resize( RAW_SECTOR_SIZE );
+  mOffsetMask = ~( RAW_SECTOR_SIZE - 1 );
   mSectorOffset.QuadPart = std::numeric_limits<LONGLONG>::max();
 }
 

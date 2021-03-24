@@ -1,6 +1,7 @@
 #include "pch.hpp"
 #include "Partition.hpp"
 #include "RawVolume.hpp"
+#include "Ex.hpp"
 
 bool PInfo::exists() const
 {
@@ -41,9 +42,28 @@ uint32_t PInfo::partitionSize() const
 
 Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume ) : mRawVolume{ std::move( rawVolume ) }
 {
-  auto bootSector = mRawVolume->readSector( partition.partitionOffset() + offset );
+  uint32_t posBoostSector = partition.partitionOffset() + offset;
+  auto bootSector = mRawVolume->readSector( posBoostSector );
 
-  mBPB = BPB{ *reinterpret_cast<BPB const*>( bootSector.data() + 0x0b ) };
+  BPB bpb{ *reinterpret_cast<BPB const*>( bootSector.data() + 0x0b ) };
 
-  return;
+  uint32_t sizLogicalSector = bpb.bps / RawVolume::RAW_SECTOR_SIZE; //in physical 
+
+  uint32_t cursor = posBoostSector + bpb.res * sizLogicalSector;
+  std::vector<uint32_t> posFats;
+
+  if ( bpb.nfats < 1 )
+    throw Ex{} << "No File Allocation Tables defined";
+
+  posFats.reserve( bpb.nfats );
+  for ( int i = 0; i < bpb.nfats; ++i )
+  {
+    posFats.push_back( cursor );
+    cursor += bpb.spf * sizLogicalSector;
+  }
+
+  mPosFat = posFats[0];
+
+  mPosDir = cursor;
+  mPosData = cursor + bpb.ndirs * sizeof( Dir ) / RawVolume::RAW_SECTOR_SIZE;
 }
