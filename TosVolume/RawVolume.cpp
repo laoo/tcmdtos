@@ -21,7 +21,7 @@ std::shared_ptr<RawVolume> RawVolume::openImageFile( std::filesystem::path const
   }
 }
 
-std::span<uint8_t const,512> RawVolume::readSector( int64_t sector )
+std::span<uint8_t const,512> RawVolume::readSector( uint32_t sector )
 {
   OVERLAPPED overlapped = {};
 

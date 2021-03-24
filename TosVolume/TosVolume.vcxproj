@@ -90,10 +90,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="BasePartition.hpp" />
-    <ClInclude Include="BGMPartition.hpp" />
+    <ClInclude Include="Partition.hpp" />
     <ClInclude Include="Ex.hpp" />
-    <ClInclude Include="GEMPartition.hpp" />
     <ClInclude Include="generator.hpp" />
     <ClInclude Include="Log.hpp" />
     <ClInclude Include="pch.hpp" />
@@ -101,9 +99,7 @@
     <ClInclude Include="TosVolume.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BasePartition.cpp" />
-    <ClCompile Include="BGMPartition.cpp" />
-    <ClCompile Include="GEMPartition.cpp" />
+    <ClCompile Include="Partition.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>

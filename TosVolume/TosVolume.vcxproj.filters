@@ -5,9 +5,7 @@
     <ClCompile Include="TosVolume.cpp" />
     <ClCompile Include="RawVolume.cpp" />
     <ClCompile Include="Log.cpp" />
-    <ClCompile Include="BasePartition.cpp" />
-    <ClCompile Include="BGMPartition.cpp" />
-    <ClCompile Include="GEMPartition.cpp" />
+    <ClCompile Include="Partition.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.hpp" />
@@ -16,8 +14,6 @@
     <ClInclude Include="generator.hpp" />
     <ClInclude Include="Ex.hpp" />
     <ClInclude Include="Log.hpp" />
-    <ClInclude Include="BasePartition.hpp" />
-    <ClInclude Include="GEMPartition.hpp" />
-    <ClInclude Include="BGMPartition.hpp" />
+    <ClInclude Include="Partition.hpp" />
   </ItemGroup>
 </Project>

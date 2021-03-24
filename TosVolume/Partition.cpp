@@ -1,5 +1,6 @@
 #include "pch.hpp"
-#include "BasePartition.hpp"
+#include "Partition.hpp"
+#include "RawVolume.hpp"
 
 bool PInfo::exists() const
 {
@@ -36,4 +37,13 @@ uint32_t PInfo::partitionOffset() const
 uint32_t PInfo::partitionSize() const
 {
   return _byteswap_ulong( size );
+}
+
+Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume ) : mRawVolume{ std::move( rawVolume ) }
+{
+  auto bootSector = mRawVolume->readSector( partition.partitionOffset() + offset );
+
+  mBPB = BPB{ *reinterpret_cast<BPB const*>( bootSector.data() + 0x0b ) };
+
+  return;
 }

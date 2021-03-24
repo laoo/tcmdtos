@@ -10,7 +10,7 @@ public:
   static cppcoro::generator<std::shared_ptr<RawVolume>> enumeratePhysicalVolumes();
   static std::shared_ptr<RawVolume> openImageFile( std::filesystem::path const& path );
 
-  std::span<uint8_t const, LOGICAL_SECTOR_SIZE> readSector( int64_t sector );
+  std::span<uint8_t const, LOGICAL_SECTOR_SIZE> readSector( uint32_t sector );
 
 private:
   RawVolume( wchar_t volume );
