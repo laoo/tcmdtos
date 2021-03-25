@@ -59,7 +59,7 @@ struct State
 
       while ( !folderList.empty() )
       {
-        for ( auto const & dir : partition->listDir( folderList.front() ) )
+        for ( auto const & dir : folderList.front()->listDir() )
         {
           if ( dir->isDirectory() )
           {
@@ -84,6 +84,7 @@ struct State
   TosVolume volume;
   std::vector<Part> parts;
   std::string arcName;
+  std::shared_ptr<DirectoryEntry> currentFile;
 };
 
 
@@ -147,6 +148,8 @@ int __stdcall ReadHeader( HANDLE hArcData, tHeaderData * headerData )
       {
         *it++ = c;
       }
+
+      state->currentFile = file;
       return 0;
     }
   }
@@ -161,7 +164,14 @@ int __stdcall ProcessFile( HANDLE hArcData, int operation, char * destPath, char
   else
   {
     auto state = (State *)hArcData;
-    return E_EREAD;
+
+    std::ofstream fout{ destName, std::ios::binary };
+    for ( auto span : state->currentFile->read() )
+    {
+      fout.write( span.data(), span.size() );
+    }
+
+    return 0;
   }
 }
 

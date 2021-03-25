@@ -1,12 +1,14 @@
 #pragma once
 
 struct TOSDir;
+class Partition;
+#include "generator.hpp"
 
-class DirectoryEntry
+class DirectoryEntry : public std::enable_shared_from_this<DirectoryEntry>
 {
 public:
   friend class Partition;
-  DirectoryEntry( TOSDir const & dir, std::shared_ptr<DirectoryEntry const> parent = {} );
+  DirectoryEntry( std::shared_ptr<Partition const> partition, TOSDir const & dir, std::shared_ptr<DirectoryEntry const> parent = {} );
   DirectoryEntry() = delete;
 
   uint32_t getYear() const;
@@ -57,6 +59,9 @@ public:
     return nameWithExt( it );
   }
 
+  cppcoro::generator<std::shared_ptr<DirectoryEntry>> listDir() const;
+  cppcoro::generator<std::span<char const>> read() const;
+
   static constexpr uint8_t ATTR_READ_ONLY = 0x01;
   static constexpr uint8_t ATTR_HIDDEN    = 0x02;
   static constexpr uint8_t ATTR_SYSTEM    = 0x04;
@@ -65,6 +70,7 @@ public:
   static constexpr uint8_t ATTR_NEW       = 0x20;
 
 private:
+  std::shared_ptr<Partition const> mPartition;
   std::shared_ptr<DirectoryEntry const> mParent;
   uint32_t mYear;
   uint32_t mMonth;

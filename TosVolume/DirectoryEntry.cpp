@@ -2,7 +2,7 @@
 #include "DirectoryEntry.hpp"
 #include "Partition.hpp"
 
-DirectoryEntry::DirectoryEntry( TOSDir const & dir, std::shared_ptr<DirectoryEntry const> parent ) : mParent{ std::move( parent ) }
+DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition const> partition, TOSDir const & dir, std::shared_ptr<DirectoryEntry const> parent ) : mPartition{ std::move( partition ) }, mParent { std::move( parent ) }
 {
   mSize = dir.fsize;
   mCluster = dir.scluster;
@@ -107,6 +107,16 @@ std::string_view DirectoryEntry::getExt() const
     return {};
   else
     return std::string_view{ mExt.data(), pos + 1 };
+}
+
+cppcoro::generator<std::shared_ptr<DirectoryEntry>> DirectoryEntry::listDir() const
+{
+  return mPartition->listDir( shared_from_this() );
+}
+
+cppcoro::generator<std::span<char const>> DirectoryEntry::read() const
+{
+  return mPartition->read( shared_from_this() );
 }
 
 

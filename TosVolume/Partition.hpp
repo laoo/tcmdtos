@@ -42,7 +42,7 @@ struct TOSDir
 };
 #pragma pack(pop)
 
-class Partition
+class Partition : public std::enable_shared_from_this<Partition>
 {
 public:
   Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume );
@@ -51,7 +51,8 @@ public:
   std::string getLabel() const;
 
   cppcoro::generator<std::shared_ptr<DirectoryEntry>> rootDir() const;
-  cppcoro::generator<std::shared_ptr<DirectoryEntry>> listDir( std::shared_ptr<DirectoryEntry> dir ) const;
+  cppcoro::generator<std::shared_ptr<DirectoryEntry>> listDir( std::shared_ptr<DirectoryEntry const> dir ) const;
+  cppcoro::generator<std::span<char const>> read( std::shared_ptr<DirectoryEntry const> dir ) const;
   PInfo::Type type() const;
 
 private:
