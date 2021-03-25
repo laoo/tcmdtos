@@ -11,6 +11,7 @@ int __declspec( dllexport ) __stdcall ProcessFile( HANDLE hArcData, int Operatio
 int __declspec( dllexport ) __stdcall CloseArchive( HANDLE hArcData );
 void __declspec( dllexport ) __stdcall SetChangeVolProc( HANDLE hArcData, tChangeVolProc pChangeVolProc1 );
 void __declspec( dllexport ) __stdcall SetProcessDataProc( HANDLE hArcData, tProcessDataProc pProcessDataProc );
+int __declspec( dllexport ) __stdcall GetPackerCaps();
 
 }
 

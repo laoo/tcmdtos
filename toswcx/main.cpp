@@ -207,3 +207,8 @@ void __stdcall SetProcessDataProc( HANDLE hArcData, tProcessDataProc pProcessDat
   auto state = (State *)hArcData;
   state->processDataProc = pProcessDataProc;
 }
+
+int __stdcall GetPackerCaps()
+{
+  return PK_CAPS_MULTIPLE;
+}
