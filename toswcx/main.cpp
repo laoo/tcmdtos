@@ -85,6 +85,7 @@ struct State
   std::vector<Part> parts;
   std::string arcName;
   std::shared_ptr<DirectoryEntry> currentFile;
+  tProcessDataProc processDataProc;
 };
 
 
@@ -169,6 +170,8 @@ int __stdcall ProcessFile( HANDLE hArcData, int operation, char * destPath, char
     for ( auto span : state->currentFile->read() )
     {
       fout.write( span.data(), span.size() );
+      if ( state->processDataProc( nullptr, (int)span.size() ) == 0 )
+        return E_EABORTED;
     }
 
     return 0;
@@ -189,4 +192,6 @@ void __stdcall SetChangeVolProc( HANDLE hArcData, tChangeVolProc pChangeVolProc1
 
 void __stdcall SetProcessDataProc( HANDLE hArcData, tProcessDataProc pProcessDataProc )
 {
+  auto state = (State *)hArcData;
+  state->processDataProc = pProcessDataProc;
 }
