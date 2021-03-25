@@ -166,7 +166,19 @@ int __stdcall ProcessFile( HANDLE hArcData, int operation, char * destPath, char
   {
     auto state = (State *)hArcData;
 
-    std::ofstream fout{ destName, std::ios::binary };
+    std::filesystem::path path;
+
+    if ( destPath )
+    {
+      path = destPath;
+      path /= destName;
+    }
+    else
+    {
+      path = destName;
+    }
+
+    std::ofstream fout{ path, std::ios::binary };
     for ( auto span : state->currentFile->read() )
     {
       fout.write( span.data(), span.size() );
