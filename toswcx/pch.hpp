@@ -8,6 +8,7 @@
 #include <exception>
 #include <iostream>
 #include <span>
+#include <deque>
 #include <stdlib.h>
 
 

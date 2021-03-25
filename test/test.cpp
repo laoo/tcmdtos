@@ -8,10 +8,31 @@ int main()
 {
   TosVolume volume{ "j:\\ST\\orgUltraSatan.img" };
 
-  for ( auto const & part : volume.partitions() )
-  {
-    std::cout << part->getLabel();
-  }
+  auto partitions = volume.partitions();
 
-  std::cout << "Hello World!\n";
+  for ( size_t i = 0; i < partitions.size(); ++i )
+  {
+    std::stringstream ss;
+    auto partition = partitions[i];
+    ss << std::setw(2) << std::setfill('0') << i;
+    auto label = partition->getLabel();
+    if ( !label.empty() )
+    {
+      ss << "." << label;
+    }
+    switch ( partition->type() )
+    {
+    case PInfo::Type::GEM:
+      ss << ".GEM";
+      break;
+    case PInfo::Type::BGM:
+      ss << ".BGM";
+      break;
+    default:
+      assert( false );
+      break;
+    }
+
+    L_NOTICE << ss.str();
+  }
 }

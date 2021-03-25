@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test", "test\test.vcxproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TosVolume", "TosVolume\TosVolume.vcxproj", "{AF6B6841-3D25-4769-86F2-A4BB36554C5E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "toswcx", "toswcx\toswcx.vcxproj", "{75755C20-E6DC-4601-8E47-143B728544EE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -27,6 +29,12 @@ Global
 		{AF6B6841-3D25-4769-86F2-A4BB36554C5E}.Release|x64.ActiveCfg = Release|x64
 		{AF6B6841-3D25-4769-86F2-A4BB36554C5E}.Release|x64.Build.0 = Release|x64
 		{AF6B6841-3D25-4769-86F2-A4BB36554C5E}.Release|x86.ActiveCfg = Release|x64
+		{75755C20-E6DC-4601-8E47-143B728544EE}.Debug|x64.ActiveCfg = Debug|x64
+		{75755C20-E6DC-4601-8E47-143B728544EE}.Debug|x64.Build.0 = Debug|x64
+		{75755C20-E6DC-4601-8E47-143B728544EE}.Debug|x86.ActiveCfg = Debug|x64
+		{75755C20-E6DC-4601-8E47-143B728544EE}.Release|x64.ActiveCfg = Release|x64
+		{75755C20-E6DC-4601-8E47-143B728544EE}.Release|x64.Build.0 = Release|x64
+		{75755C20-E6DC-4601-8E47-143B728544EE}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

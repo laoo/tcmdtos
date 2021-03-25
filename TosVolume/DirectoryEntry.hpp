@@ -6,7 +6,7 @@ class DirectoryEntry
 {
 public:
   friend class Partition;
-  DirectoryEntry( TOSDir const& dir );
+  DirectoryEntry( TOSDir const & dir, std::shared_ptr<DirectoryEntry const> parent = {} );
   DirectoryEntry() = delete;
 
   uint32_t getYear() const;
@@ -15,6 +15,8 @@ public:
   uint32_t getHour() const;
   uint32_t getMinute() const;
   uint32_t getSecond() const;
+  uint16_t getCluster() const;
+  uint32_t getSizeInBytes() const;
 
   bool isReadOnly() const;
   bool isHidden() const;
@@ -24,6 +26,36 @@ public:
   bool isNew() const;
   std::string_view getName() const;
   std::string_view getExt() const;
+  
+  template<typename IT>
+  IT nameWithExt( IT it ) const
+  {
+    for ( auto c : getName() )
+    {
+      *it++ = c;
+    }
+    auto ext = getExt();
+    if ( !ext.empty() )
+    {
+      *it++ = '.';
+      for ( auto c : ext )
+      {
+        *it++ = c;
+      }
+    }
+    return it;
+  }
+
+  template<typename IT>
+  IT fullPath( IT it ) const
+  {
+    if ( mParent )
+    {
+      it = mParent->fullPath( it );
+      *it++ = '\\';
+    }
+    return nameWithExt( it );
+  }
 
   static constexpr uint8_t ATTR_READ_ONLY = 0x01;
   static constexpr uint8_t ATTR_HIDDEN    = 0x02;
@@ -33,6 +65,7 @@ public:
   static constexpr uint8_t ATTR_NEW       = 0x20;
 
 private:
+  std::shared_ptr<DirectoryEntry const> mParent;
   uint32_t mYear;
   uint32_t mMonth;
   uint32_t mDay;

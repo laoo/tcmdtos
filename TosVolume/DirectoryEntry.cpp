@@ -2,7 +2,7 @@
 #include "DirectoryEntry.hpp"
 #include "Partition.hpp"
 
-DirectoryEntry::DirectoryEntry( TOSDir const & dir )
+DirectoryEntry::DirectoryEntry( TOSDir const & dir, std::shared_ptr<DirectoryEntry const> parent ) : mParent{ std::move( parent ) }
 {
   mSize = dir.fsize;
   mCluster = dir.scluster;
@@ -46,7 +46,17 @@ uint32_t DirectoryEntry::getMinute() const
 
 uint32_t DirectoryEntry::getSecond() const
 {
-  return mSecond;
+  return mSecond * 2;
+}
+
+uint16_t DirectoryEntry::getCluster() const
+{
+  return mCluster;
+}
+
+uint32_t DirectoryEntry::getSizeInBytes() const
+{
+  return mSize;
 }
 
 bool DirectoryEntry::isReadOnly() const
@@ -94,7 +104,7 @@ std::string_view DirectoryEntry::getExt() const
   std::string_view sv{ mExt.data(), mExt.size() };
   auto pos = sv.find_last_not_of( ' ' );
   if ( pos == std::string_view::npos )
-    return sv;
+    return {};
   else
     return std::string_view{ mExt.data(), pos + 1 };
 }

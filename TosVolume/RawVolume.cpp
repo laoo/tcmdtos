@@ -74,3 +74,8 @@ RawVolume::RawVolume( std::filesystem::path const & path )
   }
 }
 
+RawVolume::~RawVolume()
+{
+  CloseHandle( mHandle );
+}
+

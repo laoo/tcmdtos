@@ -50,7 +50,9 @@ public:
 
   std::string getLabel() const;
 
-  cppcoro::generator<DirectoryEntry> rootDir() const;
+  cppcoro::generator<std::shared_ptr<DirectoryEntry>> rootDir() const;
+  cppcoro::generator<std::shared_ptr<DirectoryEntry>> listDir( std::shared_ptr<DirectoryEntry> dir ) const;
+  PInfo::Type type() const;
 
 private:
 #pragma pack(push, 1)
@@ -81,4 +83,5 @@ private:
   uint32_t mLogicalSectorSize;
   uint32_t mClusterSize;
   uint32_t mFATSize;
+  PInfo::Type mType;
 };

@@ -42,7 +42,7 @@ uint32_t PInfo::partitionSize() const
   return _byteswap_ulong( size );
 }
 
-Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume ) : mRawVolume{ std::move( rawVolume ) }
+Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume ) : mRawVolume{ std::move( rawVolume ) }, mFAT{}, mType{ partition.type() }
 {
   assert( mRawVolume );
 
@@ -61,7 +61,7 @@ Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<
 
   mFATPos = mBootPos + bpb.res * mLogicalSectorSize;
   mDirPos = mFATPos + mFATSize * bpb.nfats;
-  mDataPos = mDirPos + mDirSize;
+  mDataPos = mDirPos + mDirSize - 2 * mClusterSize;
 
   mFAT = std::make_shared<FAT>( mFATPos, mFATSize );
   mFAT->load( *mRawVolume );
@@ -71,18 +71,10 @@ std::string Partition::getLabel() const
 {
   for ( auto const & dir : rootDir() )
   {
-    auto name = dir.getName();
-    if ( dir.isLabel() )
+    if ( dir->isLabel() )
     {
-      auto name = dir.getName();
-      auto ext = dir.getExt();
-      std::string label{ name.data(), name.size() };
-      if ( !ext.empty() )
-      {
-        label.append( "." );
-        label.append( ext, 0, ext.size() );
-      }
-
+      std::string label;
+      dir->nameWithExt( std::back_inserter( label ) );
       return label;
     }
   }
@@ -90,7 +82,7 @@ std::string Partition::getLabel() const
   return {};
 }
 
-cppcoro::generator<DirectoryEntry> Partition::rootDir() const
+cppcoro::generator<std::shared_ptr<DirectoryEntry>> Partition::rootDir() const
 {
   auto rootDir = mRawVolume->readSectors( mDirPos, mDirSize );
   size_t dirs = mDirSize * RawVolume::RAW_SECTOR_SIZE / sizeof( TOSDir );
@@ -99,17 +91,48 @@ cppcoro::generator<DirectoryEntry> Partition::rootDir() const
   {
     TOSDir const* dir = reinterpret_cast<TOSDir const*>( rootDir.data() + i * sizeof( TOSDir ) );
 
-    if ( dir->fname[0] != 0 )
-    {
-      if ( dir->fname[0] != (char)0xe5 )
-      {
-        co_yield DirectoryEntry{ *dir };
-      }
-    }
-    else
-    {
+    if ( dir->fname[0] == 0 )
       co_return;
+
+    if ( dir->fname[0] != (char)0xe5 )
+    {
+      co_yield std::make_shared<DirectoryEntry>( *dir );
     }
   }
 }
 
+cppcoro::generator<std::shared_ptr<DirectoryEntry>> Partition::listDir( std::shared_ptr<DirectoryEntry> parent ) const
+{
+  auto startCluster = parent->getCluster();
+
+  std::string clusterBuf;
+  clusterBuf.resize( mClusterSize * RawVolume::RAW_SECTOR_SIZE );
+
+  for ( uint16_t cluster : mFAT->fileClusters( startCluster ) )
+  {
+    auto dataPos = mDataPos;
+    auto clusterSize = mClusterSize;
+    mRawVolume->readSectors( dataPos + clusterSize * cluster, clusterSize, std::span<uint8_t>{ (uint8_t *)clusterBuf.data(), clusterBuf.size() } );
+
+    size_t dirsInCluster = clusterBuf.size() / sizeof( TOSDir );
+
+    for ( size_t i = 0; i < dirsInCluster; ++i )
+    {
+      TOSDir const * dir = reinterpret_cast<TOSDir const *>( clusterBuf.data() + i * sizeof( TOSDir ) );
+
+      if ( dir->fname[0] == 0 )
+        co_return;
+
+      if ( dir->fname[0] != (char)0xe5 )
+      {
+        co_yield std::make_shared<DirectoryEntry>( *dir, parent );
+      }
+    }
+  }
+}
+
+
+PInfo::Type Partition::type() const
+{
+  return mType;
+}
