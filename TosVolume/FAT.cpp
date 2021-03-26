@@ -74,3 +74,49 @@ cppcoro::generator<FAT::Range> FAT::fileClusterRanges( uint16_t cluster ) const
   if ( r.size > 0 )
     co_yield r;
 }
+
+FAT::Range FAT::findFreeClusterRange( uint32_t requiredClusters ) const
+{
+  if ( requiredClusters == 0 )
+    return {};
+
+  auto it = mClusters.cbegin() + 2;
+  auto end = mClusters.cbegin() + mClusterEnd - requiredClusters;
+    
+  while ( it < end )
+  {
+    it = std::find( it, end, 0 );
+    if ( it == end )
+      return {};
+    auto not0 = std::find_if( it, it + requiredClusters, []( uint16_t c )
+    {
+      return c != 0;
+    } );
+    if ( not0 == it + requiredClusters )
+      return { (uint16_t)std::distance( mClusters.cbegin(), it ), (uint16_t)requiredClusters };
+    else
+      it = not0 + 1;
+  }
+
+  return {};
+}
+
+std::vector<uint16_t> FAT::findFreeClusters( uint32_t requiredClusters ) const
+{
+  if ( requiredClusters == 0 )
+    return {};
+
+  std::vector<uint16_t> result;
+
+  for ( uint16_t i = 2; i < mClusterEnd; ++i )
+  {
+    if ( mClusters[i] == 0 )
+    {
+      result.push_back( i );
+      if ( result.size() == requiredClusters )
+        return result;
+    }
+  }
+
+  return {};
+}

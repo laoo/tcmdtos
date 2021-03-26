@@ -20,6 +20,9 @@ public:
   cppcoro::generator<uint16_t> fileClusters( uint16_t cluster ) const;
   cppcoro::generator<Range> fileClusterRanges( uint16_t cluster ) const;
 
+  Range findFreeClusterRange( uint32_t reqiredClusters ) const;
+  std::vector<uint16_t> findFreeClusters( uint32_t reqiredClusters ) const;
+
 private:
   std::vector<uint16_t> mClusters;
   uint32_t mPos;
