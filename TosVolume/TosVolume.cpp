@@ -89,12 +89,12 @@ void TosVolume::parseRootSector()
 
 void TosVolume::parseGEMPartition( PInfo const & partition, uint32_t offset )
 {
-  mPartitions.push_back( std::make_shared<Partition>( partition, offset, mRawVolume ) );
+  mPartitions.push_back( std::make_shared<Partition>( (int)mPartitions.size(), partition, offset, mRawVolume ) );
 }
 
 void TosVolume::parseBGMPartition( PInfo const & partition, uint32_t offset )
 {
-  mPartitions.push_back( std::make_shared<Partition>( partition, offset, mRawVolume ) );
+  mPartitions.push_back( std::make_shared<Partition>( (int)mPartitions.size(), partition, offset, mRawVolume ) );
 }
 
 void TosVolume::parseXGMPartition( PInfo const & partition, uint32_t offset )

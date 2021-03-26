@@ -51,13 +51,16 @@ public:
   template<typename IT>
   IT fullPath( IT it ) const
   {
-    if ( mParent )
+    if ( mCluster )
     {
-      it = mParent->fullPath( it );
+      if ( mParent )
+      {
+        it = mParent->fullPath( it );
+      }
+      it = nameWithExt( it );
+      if ( isDirectory() )
+        *it++ = '\\';
     }
-    it = nameWithExt( it );
-    if ( isDirectory() )
-      *it++ = '\\';
     return it;
   }
 

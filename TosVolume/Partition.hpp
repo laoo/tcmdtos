@@ -45,7 +45,7 @@ struct TOSDir
 class Partition : public std::enable_shared_from_this<Partition>
 {
 public:
-  Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume );
+  Partition( int number, PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume );
   virtual ~Partition() = default;
 
   std::string getLabel();
@@ -80,6 +80,7 @@ private:
 #pragma pack(pop)
 
 private:
+  int mNumber;
   std::shared_ptr<RawVolume> mRawVolume;
   std::shared_ptr<FAT> mFAT;
   uint32_t mBootPos;

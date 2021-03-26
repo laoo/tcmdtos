@@ -12,6 +12,7 @@ struct State
   {
     std::string label;
     std::vector<std::shared_ptr<DirectoryEntry>> fileList;
+    std::shared_ptr<DirectoryEntry> rootDir;
   };
 
   State( char const * name ) : volume{ name }, parts{}, arcName{ name }
@@ -22,39 +23,18 @@ struct State
 
       Part part{};
 
-      std::stringstream ss;
       auto partition = volume.partitions()[i];
-      ss << std::setw( 2 ) << std::setfill( '0' ) << i;
-      auto label = partition->getLabel();
-      if ( !label.empty() )
-      {
-        ss << "." << label;
-      }
-      switch ( partition->type() )
-      {
-      case PInfo::Type::GEM:
-        ss << ".GEM";
-        break;
-      case PInfo::Type::BGM:
-        ss << ".BGM";
-        break;
-      default:
-        assert( false );
-        break;
-      }
+      part.label = partition->getLabel();
+      part.rootDir = partition->rootDir();
 
-      part.label = ss.str();
-
-      for ( auto const & dir : partition->rootDir()->listDir() )
+      for ( auto const & dir : part.rootDir->listDir() )
       {
         if ( dir->isDirectory() )
         {
           folderList.push_back( dir );
         }
-        else
-        {
-          part.fileList.push_back( dir );
-        }
+
+        part.fileList.push_back( dir );
       }
 
       while ( !folderList.empty() )
@@ -66,6 +46,7 @@ struct State
             if ( dir->getName() != "." && dir->getName() != ".." )
             {
               folderList.push_back( dir );
+              part.fileList.push_back( dir );
             }
           }
           else
@@ -115,15 +96,27 @@ int __stdcall ReadHeader( HANDLE hArcData, tHeaderData * headerData )
 
     auto & part = state->parts.back();
 
+    std::shared_ptr<DirectoryEntry> file;
+
     if ( part.fileList.empty() )
     {
-      state->parts.pop_back();
+      if ( part.rootDir )
+      {
+        std::swap( part.rootDir, file );
+      }
+      else
+      {
+        state->parts.pop_back();
+      }
     }
     else
     {
-      auto file = part.fileList.back();
+      file = part.fileList.back();
       part.fileList.pop_back();
+    }
 
+    if ( file )
+    {
       auto it = headerData->FileName;
       for ( auto c : part.label )
       {

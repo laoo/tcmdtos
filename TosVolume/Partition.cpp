@@ -42,7 +42,7 @@ uint32_t PInfo::partitionSize() const
   return _byteswap_ulong( size );
 }
 
-Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume ) : mRawVolume{ std::move( rawVolume ) }, mFAT{}, mType{ partition.type() }
+Partition::Partition( int number, PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume ) : mNumber{ number }, mRawVolume{ std::move( rawVolume ) }, mFAT{}, mType{ partition.type() }
 {
   assert( mRawVolume );
 
@@ -70,17 +70,36 @@ Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<
 
 std::string Partition::getLabel()
 {
+  std::string label;
   for ( auto const & dir : rootDir()->listDir() )
   {
     if ( dir->isLabel() )
     {
-      std::string label;
       dir->nameWithExt( std::back_inserter( label ) );
-      return label;
+      break;
     }
   }
 
-  return {};
+  std::stringstream ss;
+  ss << std::setw( 2 ) << std::setfill( '0' ) << mNumber;
+  if ( !label.empty() )
+  {
+    ss << "." << label;
+  }
+  switch ( type() )
+  {
+  case PInfo::Type::GEM:
+    ss << ".GEM";
+    break;
+  case PInfo::Type::BGM:
+    ss << ".BGM";
+    break;
+  default:
+    assert( false );
+    break;
+  }
+
+  return ss.str();
 }
 
 std::shared_ptr<DirectoryEntry> Partition::rootDir()
