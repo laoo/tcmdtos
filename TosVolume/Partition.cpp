@@ -62,8 +62,9 @@ Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<
   mFATPos = mBootPos + bpb.res * mLogicalSectorSize;
   mDirPos = mFATPos + mFATSize * bpb.nfats;
   mDataPos = mDirPos + mDirSize - 2 * mClusterSize; //two entries in FAT are reserved
+  mClusterEnd = ( bpb.nsects - ( mDataPos - mBootPos ) ) / mClusterSize;
 
-  mFAT = std::make_shared<FAT>( mFATPos, mFATSize );
+  mFAT = std::make_shared<FAT>( mFATPos, mFATSize, mClusterEnd );
   mFAT->load( *mRawVolume );
 }
 

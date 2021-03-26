@@ -4,7 +4,7 @@
 #include "Ex.hpp"
 #include "Log.hpp"
 
-FAT::FAT( uint32_t pos, uint32_t size ) : mClusters{}, mPos{ pos }, mSize{ size }
+FAT::FAT( uint32_t pos, uint32_t size, uint32_t clusterEnd ) : mClusters{}, mPos{ pos }, mSize{ size }, mClusterEnd{ clusterEnd }
 {
 }
 
