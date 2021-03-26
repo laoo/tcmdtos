@@ -2,7 +2,14 @@
 #include "DirectoryEntry.hpp"
 #include "Partition.hpp"
 
-DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition const> partition, TOSDir const & dir, std::shared_ptr<DirectoryEntry const> parent ) : mPartition{ std::move( partition ) }, mParent { std::move( parent ) }
+DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition const> partition ) : mPartition{ std::move( partition ) }, mParent{}, mYear{}, mMonth{}, mDay{}, mHour{}, mMinute{}, mSecond{}, mSize{}, mCluster{}, mAttrib{}, mName{}, mExt{ ATTR_DIRECTORY }
+{
+  std::fill( mName.begin(), mName.end(), ' ' );
+  std::fill( mExt.begin(), mExt.end(), ' ' );
+}
+
+DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition const> partition, TOSDir const & dir, std::shared_ptr<DirectoryEntry const> parent ) :
+  mPartition{ std::move( partition ) }, mParent{ std::move( parent ) }, mYear{}, mMonth{}, mDay{}, mHour{}, mMinute{}, mSecond{}, mSize{}, mCluster{}, mAttrib{}, mName{}, mExt{}
 {
   mSize = dir.fsize;
   mCluster = dir.scluster;

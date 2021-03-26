@@ -50,7 +50,7 @@ public:
 
   std::string getLabel() const;
 
-  cppcoro::generator<std::shared_ptr<DirectoryEntry>> rootDir() const;
+  std::shared_ptr<DirectoryEntry> rootDir() const;
   cppcoro::generator<std::shared_ptr<DirectoryEntry>> listDir( std::shared_ptr<DirectoryEntry const> dir ) const;
   cppcoro::generator<std::span<char const>> read( std::shared_ptr<DirectoryEntry const> dir ) const;
   PInfo::Type type() const;
@@ -83,6 +83,7 @@ private:
   uint32_t mDirSize;
   uint32_t mLogicalSectorSize;
   uint32_t mClusterSize;
+  uint32_t mClusterEnd; //one past last cluster
   uint32_t mFATSize;
   PInfo::Type mType;
 };

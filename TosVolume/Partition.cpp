@@ -69,7 +69,7 @@ Partition::Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<
 
 std::string Partition::getLabel() const
 {
-  for ( auto const & dir : rootDir() )
+  for ( auto const & dir : rootDir()->listDir() )
   {
     if ( dir->isLabel() )
     {
@@ -82,67 +82,79 @@ std::string Partition::getLabel() const
   return {};
 }
 
-cppcoro::generator<std::shared_ptr<DirectoryEntry>> Partition::rootDir() const
+std::shared_ptr<DirectoryEntry> Partition::rootDir() const
 {
-  auto rootDir = mRawVolume->readSectors( mDirPos, mDirSize );
-  size_t dirs = mDirSize * RawVolume::RAW_SECTOR_SIZE / sizeof( TOSDir );
-
-  for ( size_t i = 0; i < dirs; ++i )
-  {
-    TOSDir const* dir = reinterpret_cast<TOSDir const*>( rootDir.data() + i * sizeof( TOSDir ) );
-
-    if ( dir->fname[0] == 0 )
-      co_return;
-
-    if ( dir->fname[0] != (char)0xe5 )
-    {
-      co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir );
-    }
-  }
+  return std::make_shared<DirectoryEntry>( shared_from_this() );
 }
 
 cppcoro::generator<std::shared_ptr<DirectoryEntry>> Partition::listDir( std::shared_ptr<DirectoryEntry const> parent ) const
 {
-  auto startCluster = parent->getCluster();
-
-  std::string clusterBuf;
-  clusterBuf.resize( mClusterSize * RawVolume::RAW_SECTOR_SIZE );
-
-  for ( uint16_t cluster : mFAT->fileClusters( startCluster ) )
+  if ( auto startCluster = parent->getCluster() )
   {
-    mRawVolume->readSectors( mDataPos + mClusterSize * cluster, mClusterSize, std::span<uint8_t>{ (uint8_t *)clusterBuf.data(), clusterBuf.size() } );
+    std::string clusterBuf;
+    clusterBuf.resize( mClusterSize * RawVolume::RAW_SECTOR_SIZE );
 
-    size_t dirsInCluster = clusterBuf.size() / sizeof( TOSDir );
-
-    for ( size_t i = 0; i < dirsInCluster; ++i )
+    for ( uint16_t cluster : mFAT->fileClusters( startCluster ) )
     {
-      TOSDir const * dir = reinterpret_cast<TOSDir const *>( clusterBuf.data() + i * sizeof( TOSDir ) );
+      mRawVolume->readSectors( mDataPos + mClusterSize * cluster, mClusterSize, std::span<uint8_t>{ (uint8_t *)clusterBuf.data(), clusterBuf.size() } );
 
-      if ( dir->fname[0] == 0 )
-        co_return;
+      size_t dirsInCluster = clusterBuf.size() / sizeof( TOSDir );
 
-      if ( dir->fname[0] != (char)0xe5 )
+      for ( size_t i = 0; i < dirsInCluster; ++i )
       {
-        co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir, parent );
+        TOSDir const * dir = reinterpret_cast<TOSDir const *>( clusterBuf.data() + i * sizeof( TOSDir ) );
+
+        if ( dir->fname[0] == 0 )
+          co_return;
+
+        if ( dir->fname[0] != (char)0xe5 )
+        {
+          co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir, parent );
+        }
       }
     }
   }
+  else //root
+  {
+    auto rootDir = mRawVolume->readSectors( mDirPos, mDirSize );
+    size_t dirs = mDirSize * RawVolume::RAW_SECTOR_SIZE / sizeof( TOSDir );
+    
+    for ( size_t i = 0; i < dirs; ++i )
+    {
+      TOSDir const* dir = reinterpret_cast<TOSDir const*>( rootDir.data() + i * sizeof( TOSDir ) );
+    
+      if ( dir->fname[0] == 0 )
+        co_return;
+    
+      if ( dir->fname[0] != (char)0xe5 )
+      {
+        co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir );
+      }
+    }
+  }
+
 }
 
 cppcoro::generator<std::span<char const>> Partition::read( std::shared_ptr<DirectoryEntry const> dir ) const
 {
-  auto startCluster = dir->getCluster();
-  auto size = dir->getSizeInBytes();
-
-  std::string clusterBuf;
-  clusterBuf.resize( mClusterSize * RawVolume::RAW_SECTOR_SIZE );
-
-  uint32_t count{ 1 };
-  for ( uint16_t cluster : mFAT->fileClusters( startCluster ) )
+  if ( auto startCluster = dir->getCluster() )
   {
-    mRawVolume->readSectors( mDataPos + mClusterSize * cluster, mClusterSize, std::span<uint8_t>{ (uint8_t *)clusterBuf.data(), clusterBuf.size() } );
+    auto size = dir->getSizeInBytes();
 
-    co_yield std::span<char const>{ (char const *)clusterBuf.data(), ( count++ * clusterBuf.size() < size ) ? clusterBuf.size() : ( size % clusterBuf.size() ) };
+    std::string clusterBuf;
+    clusterBuf.resize( mClusterSize * RawVolume::RAW_SECTOR_SIZE );
+
+    uint32_t count{ 1 };
+    for ( uint16_t cluster : mFAT->fileClusters( startCluster ) )
+    {
+      mRawVolume->readSectors( mDataPos + mClusterSize * cluster, mClusterSize, std::span<uint8_t>{ (uint8_t *)clusterBuf.data(), clusterBuf.size() } );
+
+      co_yield std::span<char const>{ (char const *)clusterBuf.data(), ( count++ * clusterBuf.size() < size ) ? clusterBuf.size() : ( size % clusterBuf.size() ) };
+    }
+  }
+  else
+  {
+    co_return;
   }
 }
 

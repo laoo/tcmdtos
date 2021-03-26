@@ -7,7 +7,7 @@ class Partition;
 class DirectoryEntry : public std::enable_shared_from_this<DirectoryEntry>
 {
 public:
-  friend class Partition;
+  DirectoryEntry( std::shared_ptr<Partition const> partition ); //root
   DirectoryEntry( std::shared_ptr<Partition const> partition, TOSDir const & dir, std::shared_ptr<DirectoryEntry const> parent = {} );
   DirectoryEntry() = delete;
 
@@ -19,6 +19,8 @@ public:
   uint32_t getSecond() const;
   uint16_t getCluster() const;
   uint32_t getSizeInBytes() const;
+  std::string_view getName() const;
+  std::string_view getExt() const;
 
   bool isReadOnly() const;
   bool isHidden() const;
@@ -26,8 +28,6 @@ public:
   bool isLabel() const;
   bool isDirectory() const;
   bool isNew() const;
-  std::string_view getName() const;
-  std::string_view getExt() const;
   
   template<typename IT>
   IT nameWithExt( IT it ) const
@@ -54,9 +54,11 @@ public:
     if ( mParent )
     {
       it = mParent->fullPath( it );
-      *it++ = '\\';
     }
-    return nameWithExt( it );
+    it = nameWithExt( it );
+    if ( isDirectory() )
+      *it++ = '\\';
+    return it;
   }
 
   cppcoro::generator<std::shared_ptr<DirectoryEntry>> listDir() const;

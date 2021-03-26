@@ -45,7 +45,7 @@ struct State
 
       part.label = ss.str();
 
-      for ( auto const & dir : partition->rootDir() )
+      for ( auto const & dir : partition->rootDir()->listDir() )
       {
         if ( dir->isDirectory() )
         {
