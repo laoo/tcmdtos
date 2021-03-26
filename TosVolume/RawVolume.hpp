@@ -13,6 +13,7 @@ public:
   std::string readSectors( uint32_t sector, uint32_t count );
   void readSectors( uint32_t sector, uint32_t count, std::span<uint8_t> destination );
   void writeSectors( uint32_t sector, uint32_t count, std::span<uint8_t const> source );
+  void writeFragment( uint32_t sector, uint32_t offset, std::span<uint8_t const> data );
 
   ~RawVolume();
 

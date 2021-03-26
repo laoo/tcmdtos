@@ -1,6 +1,7 @@
 #pragma once
 
 #include "generator.hpp"
+#include "WriteTransaction.hpp"
 
 class RawVolume;
 
@@ -23,7 +24,17 @@ public:
   Range findFreeClusterRange( uint32_t reqiredClusters ) const;
   std::vector<uint16_t> findFreeClusters( uint32_t reqiredClusters ) const;
 
-  void freeClusters( uint16_t startCluster );
+  WriteTransaction freeClusters( uint16_t startCluster );
+
+private:
+  class Modifier
+  {
+  public:
+    void add( uint16_t cluster );
+    WriteTransaction commit( FAT const& fat );
+
+    std::vector<uint16_t> mModified;
+  };
 
 private:
   std::vector<uint16_t> mClusters;

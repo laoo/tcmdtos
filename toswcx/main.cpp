@@ -85,8 +85,9 @@ struct State
   std::vector<Part> parts;
   std::string arcName;
   std::shared_ptr<DirectoryEntry> currentFile;
-  tProcessDataProc processDataProc;
 };
+
+tProcessDataProc processDataProc;
 
 
 HANDLE __stdcall OpenArchive( tOpenArchiveData * archiveData )
@@ -182,7 +183,7 @@ int __stdcall ProcessFile( HANDLE hArcData, int operation, char * destPath, char
     for ( auto span : state->currentFile->read() )
     {
       fout.write( span.data(), span.size() );
-      if ( state->processDataProc( nullptr, (int)span.size() ) == 0 )
+      if ( processDataProc( nullptr, (int)span.size() ) == 0 )
         return E_EABORTED;
     }
 
@@ -204,13 +205,12 @@ void __stdcall SetChangeVolProc( HANDLE hArcData, tChangeVolProc pChangeVolProc1
 
 void __stdcall SetProcessDataProc( HANDLE hArcData, tProcessDataProc pProcessDataProc )
 {
-  auto state = (State *)hArcData;
-  state->processDataProc = pProcessDataProc;
+  processDataProc = pProcessDataProc;
 }
 
 int __stdcall GetPackerCaps()
 {
-  return PK_CAPS_MULTIPLE;
+  return PK_CAPS_MULTIPLE | PK_CAPS_DELETE;
 }
 
 int __stdcall PackFiles( char * PackedFile, char * SubPath, char * SrcPath, char * AddList, int Flags )
@@ -218,9 +218,43 @@ int __stdcall PackFiles( char * PackedFile, char * SubPath, char * SrcPath, char
   return E_NOT_SUPPORTED;
 }
 
-int __stdcall DeleteFiles( char * PackedFile, char * DeleteList )
+int __stdcall DeleteFiles( char * packedFile, char * deleteList )
 {
-  return E_NOT_SUPPORTED;
+  try
+  {
+    TosVolume volume{ packedFile };
+
+    if ( !deleteList )
+      return E_NO_FILES;
+
+    while ( *deleteList )
+    {
+      if ( auto element = volume.find( deleteList ) )
+      {
+        if ( !element->isDirectory() )
+        {
+          element->unlink();
+        }
+        else
+        {
+          return E_NOT_SUPPORTED;
+        }
+      }
+      else
+      {
+        return E_NO_FILES;
+      }
+
+      auto size = strlen( deleteList );
+      deleteList += size + 1;
+    }
+
+    return 0;
+  }
+  catch ( [[maybe_unused]] Ex const & ex )
+  {
+    return E_BAD_ARCHIVE;
+  }
 }
 
 BOOL __stdcall CanYouHandleThisFile( char * FileName )

@@ -111,7 +111,7 @@ cppcoro::generator<std::shared_ptr<DirectoryEntry>> Partition::listDir( std::sha
 
         if ( dir->fname[0] != (char)0xe5 )
         {
-          co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir, sector, i, parent );
+          co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir, sector, i * sizeof( TOSDir ), parent );
         }
       }
     }
@@ -130,7 +130,7 @@ cppcoro::generator<std::shared_ptr<DirectoryEntry>> Partition::listDir( std::sha
     
       if ( dir->fname[0] != (char)0xe5 )
       {
-        co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir, mDirPos, i );
+        co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir, mDirPos, i * sizeof( TOSDir ) );
       }
     }
   }
@@ -163,20 +163,12 @@ void Partition::unlink( std::shared_ptr<DirectoryEntry> dir )
 {
   if ( auto startCluster = dir->getCluster() )
   {
+    auto transaction = mFAT->freeClusters( startCluster );
+
     auto [sector, offset] = dir->getLocationInPartition();
+    transaction.add( sector, offset, std::vector<uint8_t>( 1, 0xe5 ) );
 
-    mFAT->freeClusters( startCluster );
-
-    std::string dirSectorBuf;
-    dirSectorBuf.resize( RawVolume::RAW_SECTOR_SIZE );
-
-    mRawVolume->readSectors( sector, 1, std::span<uint8_t>{ (uint8_t *)dirSectorBuf.data(), dirSectorBuf.size() } );
-
-    TOSDir * dir = reinterpret_cast<TOSDir *>( dirSectorBuf.data() + offset * sizeof( TOSDir ) );
-
-    dir->fname[0] = (char)0xe5;
-
-    mRawVolume->writeSectors( sector, 1, std::span<uint8_t const>{ (uint8_t const*)dirSectorBuf.data(), dirSectorBuf.size() } );
+    transaction.commit( *mRawVolume );
   }
 }
 

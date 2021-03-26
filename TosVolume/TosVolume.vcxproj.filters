@@ -8,6 +8,7 @@
     <ClCompile Include="Partition.cpp" />
     <ClCompile Include="DirectoryEntry.cpp" />
     <ClCompile Include="FAT.cpp" />
+    <ClCompile Include="WriteTransaction.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.hpp" />
@@ -19,5 +20,6 @@
     <ClInclude Include="Partition.hpp" />
     <ClInclude Include="DirectoryEntry.hpp" />
     <ClInclude Include="FAT.hpp" />
+    <ClInclude Include="WriteTransaction.hpp" />
   </ItemGroup>
 </Project>

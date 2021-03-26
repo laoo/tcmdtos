@@ -89,6 +89,32 @@ void RawVolume::writeSectors( uint32_t sector, uint32_t count, std::span<uint8_t
   }
 }
 
+void RawVolume::writeFragment( uint32_t sector, uint32_t offset, std::span<uint8_t const> data )
+{
+  LARGE_INTEGER sectorOffset;
+  sectorOffset.QuadPart = sector * RAW_SECTOR_SIZE + offset;
+
+  OVERLAPPED overlapped = {};
+  overlapped.Offset = sectorOffset.LowPart;
+  overlapped.OffsetHigh = sectorOffset.HighPart;
+
+  if ( !WriteFile( mHandle, data.data(), (DWORD)data.size(), NULL, &overlapped ) )
+  {
+    auto err = GetLastError();
+    if ( err != ERROR_IO_PENDING )
+    {
+      throw Ex{} << "Error initiating write to file: " << err;
+    }
+  }
+
+  DWORD bytesCount;
+
+  if ( !GetOverlappedResult( mHandle, &overlapped, &bytesCount, TRUE ) )
+  {
+    throw Ex{} << "Error writing to file: " << GetLastError();
+  }
+}
+
 RawVolume::RawVolume( wchar_t volume )
 {
 }

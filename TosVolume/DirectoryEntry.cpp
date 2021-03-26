@@ -116,22 +116,26 @@ std::string_view DirectoryEntry::getExt() const
     return std::string_view{ mExt.data(), pos + 1 };
 }
 
-std::shared_ptr<DirectoryEntry> DirectoryEntry::findChild( std::string_view namesv ) const
+std::shared_ptr<DirectoryEntry> DirectoryEntry::find( std::string_view namesv ) const
 {
   std::array<char, 8> name{};
   std::array<char, 3> ext{};
+  std::string_view rest;
 
-  if ( extractNameExt( namesv, name, ext ) == false )
+  if ( extractNameExt( namesv, name, ext, rest ) == false )
     return {};
 
   for ( auto const& dir : listDir() )
   {
-    if ( std::mismatch( name.cbegin(), dir->mName.cbegin(), name.cend() ).first != name.cend() )
+    if ( std::mismatch( name.cbegin(), name.cend(), dir->mName.cbegin() ).first != name.cend() )
       continue;
-    if ( std::mismatch( ext.cbegin(), dir->mExt.cbegin(), ext.cend() ).first != ext.cend() )
+    if ( std::mismatch( ext.cbegin(), ext.cend(), dir->mExt.cbegin() ).first != ext.cend() )
       continue;
 
-    return dir;
+    if ( rest.empty() )
+      return dir;
+    else
+      return dir->find( rest );
   }
 
   return {};
@@ -160,6 +164,28 @@ bool DirectoryEntry::unlink()
   mPartition->unlink( shared_from_this() );
   return true;
 }
+
+bool DirectoryEntry::extractNameExt( std::string_view src, std::array<char, 8> & name, std::array<char, 3> & ext, std::string_view & rest )
+{
+  auto backSlash = std::find( src.cbegin(), src.cend(), '\\' );
+
+  if ( extractNameExt( std::string_view{ src.data(), (size_t)std::distance( src.cbegin(), backSlash ) }, name, ext ) )
+  {
+    if ( backSlash == src.cend() )
+      rest = {};
+    else
+    {
+      rest = std::string_view{ &*backSlash + 1, (size_t)std::distance( backSlash + 1, src.cend() ) };
+    }
+
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
 
 bool DirectoryEntry::extractNameExt( std::string_view src, std::array<char, 8> & name, std::array<char, 3> & ext )
 {

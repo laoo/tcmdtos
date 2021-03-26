@@ -108,17 +108,56 @@ std::vector<uint16_t> FAT::findFreeClusters( uint32_t requiredClusters ) const
   return {};
 }
 
-void FAT::freeClusters( uint16_t startCluster )
+WriteTransaction FAT::freeClusters( uint16_t startCluster )
 {
   uint16_t maxCluster = mClusters.size() > 4086 ? 0xfff0 : 0xff0;
+
+  Modifier mod;
+  std::vector<uint16_t> freed;
 
   while ( startCluster > 0 && startCluster < maxCluster )
   {
     auto cluster = startCluster;
+
+    mod.add( cluster );
+
     if ( cluster > mClusters.size() )
       throw Ex{} << "Cluster index " << cluster << " exceeds FAT size of " << mClusters.size();
 
     startCluster = 0;
     std::swap( startCluster, mClusters[cluster] );
   }
+
+  return mod.commit( *this );
+}
+
+void FAT::Modifier::add( uint16_t cluster )
+{
+  auto ub = std::upper_bound( mModified.begin(), mModified.end(), cluster );
+  mModified.insert( ub, cluster );
+}
+
+WriteTransaction FAT::Modifier::commit( FAT const& fat )
+{
+  WriteTransaction result;
+  for ( auto it = mModified.cbegin(); it != mModified.cend(); )
+  {
+    uint32_t firstSector = mModified.front() / ( RawVolume::RAW_SECTOR_SIZE / sizeof( uint16_t ) );
+    auto nextSectorIt = std::find_if_not( it, mModified.cend(), [=]( uint16_t c )
+    {
+      auto sector = c / ( RawVolume::RAW_SECTOR_SIZE / sizeof( uint16_t ) );
+      return firstSector == sector;
+    } );
+
+    uint32_t startOff = *it;
+    uint32_t endOff = *( nextSectorIt - 1 );
+    std::vector<uint8_t> data;
+    data.reserve( endOff - startOff + 1 );
+    std::copy( (uint8_t const *)&fat.mClusters[startOff], (uint8_t const *)&fat.mClusters[endOff + 1], std::back_inserter( data ) );
+    result.add( fat.mPos + firstSector, startOff % ( RawVolume::RAW_SECTOR_SIZE / sizeof( uint16_t ) ) * 2, std::move( data ) );
+
+    it = nextSectorIt;
+  }
+
+  return result;
 }

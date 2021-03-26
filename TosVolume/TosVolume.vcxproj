@@ -172,6 +172,7 @@
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="RawVolume.hpp" />
     <ClInclude Include="TosVolume.hpp" />
+    <ClInclude Include="WriteTransaction.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DirectoryEntry.cpp" />
@@ -186,6 +187,7 @@
     </ClCompile>
     <ClCompile Include="RawVolume.cpp" />
     <ClCompile Include="TosVolume.cpp" />
+    <ClCompile Include="WriteTransaction.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
