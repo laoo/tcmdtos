@@ -116,6 +116,27 @@ std::string_view DirectoryEntry::getExt() const
     return std::string_view{ mExt.data(), pos + 1 };
 }
 
+std::shared_ptr<DirectoryEntry> DirectoryEntry::findChild( std::string_view namesv ) const
+{
+  std::array<char, 8> name{};
+  std::array<char, 3> ext{};
+
+  if ( extractNameExt( namesv, name, ext ) == false )
+    return {};
+
+  for ( auto const& dir : listDir() )
+  {
+    if ( std::mismatch( name.cbegin(), dir->mName.cbegin(), name.cend() ).first != name.cend() )
+      continue;
+    if ( std::mismatch( ext.cbegin(), dir->mExt.cbegin(), ext.cend() ).first != ext.cend() )
+      continue;
+
+    return dir;
+  }
+
+  return {};
+}
+
 cppcoro::generator<std::shared_ptr<DirectoryEntry>> DirectoryEntry::listDir() const
 {
   return mPartition->listDir( shared_from_this() );
@@ -124,6 +145,35 @@ cppcoro::generator<std::shared_ptr<DirectoryEntry>> DirectoryEntry::listDir() co
 cppcoro::generator<std::span<char const>> DirectoryEntry::read() const
 {
   return mPartition->read( shared_from_this() );
+}
+
+bool DirectoryEntry::extractNameExt( std::string_view src, std::array<char, 8> & name, std::array<char, 3> & ext )
+{
+  auto dotIt = std::find( src.cbegin(), src.cend(), '.' );
+  auto nameSize = std::distance( src.cbegin(), dotIt );
+  if ( nameSize > 8 )
+    return false;
+
+  if ( dotIt == src.cend() )
+  {
+    std::fill( name.begin(), name.end(), ' ' );
+    std::fill( ext.begin(), ext.end(), ' ' );
+    std::copy( src.cbegin(), dotIt, name.begin() );
+  }
+  else
+  {
+    auto extSize = std::distance( dotIt + 1, src.cend() );
+    if ( extSize > 3 )
+      return false;
+
+    std::fill( name.begin(), name.end(), ' ' );
+    std::fill( ext.begin(), ext.end(), ' ' );
+
+    std::copy( src.cbegin(), dotIt, name.begin() );
+    std::copy( dotIt + 1, src.cend(), ext.begin() );
+  }
+
+  return true;
 }
 
 

@@ -61,6 +61,7 @@ public:
     return it;
   }
 
+  std::shared_ptr<DirectoryEntry> findChild( std::string_view name ) const;
   cppcoro::generator<std::shared_ptr<DirectoryEntry>> listDir() const;
   cppcoro::generator<std::span<char const>> read() const;
 
@@ -70,6 +71,8 @@ public:
   static constexpr uint8_t ATTR_LABEL     = 0x08;
   static constexpr uint8_t ATTR_DIRECTORY = 0x10;
   static constexpr uint8_t ATTR_NEW       = 0x20;
+
+  static bool extractNameExt( std::string_view src, std::array<char, 8> & name, std::array<char, 3> & ext );
 
 private:
   std::shared_ptr<Partition const> mPartition;
