@@ -212,3 +212,26 @@ int __stdcall GetPackerCaps()
 {
   return PK_CAPS_MULTIPLE;
 }
+
+int __stdcall PackFiles( char * PackedFile, char * SubPath, char * SrcPath, char * AddList, int Flags )
+{
+  return E_NOT_SUPPORTED;
+}
+
+int __stdcall DeleteFiles( char * PackedFile, char * DeleteList )
+{
+  return E_NOT_SUPPORTED;
+}
+
+BOOL __stdcall CanYouHandleThisFile( char * FileName )
+{
+  try
+  {
+    TosVolume volume{ FileName };
+    return 1;
+  }
+  catch ( [[maybe_unused]] Ex const & ex )
+  {
+    return 0;
+  }
+}
