@@ -130,7 +130,7 @@ cppcoro::generator<std::shared_ptr<DirectoryEntry>> Partition::listDir( std::sha
 
         if ( dir->fname[0] != (char)0xe5 )
         {
-          co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir, sector, i * sizeof( TOSDir ), parent );
+          co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir, sector, (uint32_t)( i * sizeof( TOSDir ) ), parent );
         }
       }
     }
@@ -149,7 +149,7 @@ cppcoro::generator<std::shared_ptr<DirectoryEntry>> Partition::listDir( std::sha
     
       if ( dir->fname[0] != (char)0xe5 )
       {
-        co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir, mDirPos, i * sizeof( TOSDir ) );
+        co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir, mDirPos, (uint32_t)( i * sizeof( TOSDir ) ) );
       }
     }
   }
