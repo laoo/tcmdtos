@@ -23,6 +23,8 @@ public:
   Range findFreeClusterRange( uint32_t reqiredClusters ) const;
   std::vector<uint16_t> findFreeClusters( uint32_t reqiredClusters ) const;
 
+  void freeClusters( uint16_t startCluster );
+
 private:
   std::vector<uint16_t> mClusters;
   uint32_t mPos;

@@ -2,14 +2,14 @@
 #include "DirectoryEntry.hpp"
 #include "Partition.hpp"
 
-DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition const> partition ) : mPartition{ std::move( partition ) }, mParent{}, mYear{}, mMonth{}, mDay{}, mHour{}, mMinute{}, mSecond{}, mSize{}, mCluster{}, mAttrib{}, mName{}, mExt{ ATTR_DIRECTORY }
+DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition> partition ) : mPartition{ std::move( partition ) }, mParent{}, mYear{}, mMonth{}, mDay{}, mHour{}, mMinute{}, mSecond{}, mSize{}, mCluster{}, mAttrib{}, mName{}, mExt{ ATTR_DIRECTORY }
 {
   std::fill( mName.begin(), mName.end(), ' ' );
   std::fill( mExt.begin(), mExt.end(), ' ' );
 }
 
-DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition const> partition, TOSDir const & dir, std::shared_ptr<DirectoryEntry const> parent ) :
-  mPartition{ std::move( partition ) }, mParent{ std::move( parent ) }, mYear{}, mMonth{}, mDay{}, mHour{}, mMinute{}, mSecond{}, mSize{}, mCluster{}, mAttrib{}, mName{}, mExt{}
+DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition> partition, TOSDir const & dir, uint32_t sector, uint32_t offset, std::shared_ptr<DirectoryEntry const> parent ) :
+  mPartition{ std::move( partition ) }, mParent{ std::move( parent ) }, mYear{}, mMonth{}, mDay{}, mHour{}, mMinute{}, mSecond{}, mSize{}, mCluster{}, mSector{ sector }, mOffset{ offset }, mAttrib{}, mName{}, mExt{}
 {
   mSize = dir.fsize;
   mCluster = dir.scluster;
@@ -145,6 +145,20 @@ cppcoro::generator<std::shared_ptr<DirectoryEntry>> DirectoryEntry::listDir() co
 cppcoro::generator<std::span<char const>> DirectoryEntry::read() const
 {
   return mPartition->read( shared_from_this() );
+}
+
+std::pair<uint32_t, uint32_t> DirectoryEntry::getLocationInPartition() const
+{
+  return { mSector, mOffset };
+}
+
+bool DirectoryEntry::unlink()
+{
+  if ( isDirectory() )
+    return false;
+
+  mPartition->unlink( shared_from_this() );
+  return true;
 }
 
 bool DirectoryEntry::extractNameExt( std::string_view src, std::array<char, 8> & name, std::array<char, 3> & ext )

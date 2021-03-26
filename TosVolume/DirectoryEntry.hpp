@@ -7,8 +7,8 @@ class Partition;
 class DirectoryEntry : public std::enable_shared_from_this<DirectoryEntry>
 {
 public:
-  DirectoryEntry( std::shared_ptr<Partition const> partition ); //root
-  DirectoryEntry( std::shared_ptr<Partition const> partition, TOSDir const & dir, std::shared_ptr<DirectoryEntry const> parent = {} );
+  DirectoryEntry( std::shared_ptr<Partition> partition ); //root
+  DirectoryEntry( std::shared_ptr<Partition> partition, TOSDir const & dir, uint32_t sector, uint32_t offset, std::shared_ptr<DirectoryEntry const> parent = {} );
   DirectoryEntry() = delete;
 
   uint32_t getYear() const;
@@ -64,6 +64,10 @@ public:
   std::shared_ptr<DirectoryEntry> findChild( std::string_view name ) const;
   cppcoro::generator<std::shared_ptr<DirectoryEntry>> listDir() const;
   cppcoro::generator<std::span<char const>> read() const;
+  std::pair< uint32_t, uint32_t> getLocationInPartition() const;
+
+  bool unlink();
+
 
   static constexpr uint8_t ATTR_READ_ONLY = 0x01;
   static constexpr uint8_t ATTR_HIDDEN    = 0x02;
@@ -75,7 +79,7 @@ public:
   static bool extractNameExt( std::string_view src, std::array<char, 8> & name, std::array<char, 3> & ext );
 
 private:
-  std::shared_ptr<Partition const> mPartition;
+  std::shared_ptr<Partition> mPartition;
   std::shared_ptr<DirectoryEntry const> mParent;
   uint32_t mYear;
   uint32_t mMonth;
@@ -85,6 +89,8 @@ private:
   uint32_t mSecond;
   uint32_t mSize;
   uint16_t mCluster;
+  uint32_t mSector;
+  uint32_t mOffset;
   uint8_t mAttrib;
   std::array<char, 8> mName;
   std::array<char, 3> mExt;

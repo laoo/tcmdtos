@@ -48,12 +48,18 @@ public:
   Partition( PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume );
   virtual ~Partition() = default;
 
-  std::string getLabel() const;
-
-  std::shared_ptr<DirectoryEntry> rootDir() const;
-  cppcoro::generator<std::shared_ptr<DirectoryEntry>> listDir( std::shared_ptr<DirectoryEntry const> dir ) const;
-  cppcoro::generator<std::span<char const>> read( std::shared_ptr<DirectoryEntry const> dir ) const;
+  std::string getLabel();
   PInfo::Type type() const;
+
+  std::shared_ptr<DirectoryEntry> rootDir();
+
+private:
+  friend class DirectoryEntry;
+
+  cppcoro::generator<std::shared_ptr<DirectoryEntry>> listDir( std::shared_ptr<DirectoryEntry const> dir );
+  cppcoro::generator<std::span<char const>> read( std::shared_ptr<DirectoryEntry const> dir ) const;
+  
+  void unlink( std::shared_ptr<DirectoryEntry> dir );
 
 private:
 #pragma pack(push, 1)

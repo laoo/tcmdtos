@@ -16,29 +16,16 @@ void FAT::load( RawVolume & volume )
 
 cppcoro::generator<uint16_t> FAT::fileClusters( uint16_t cluster ) const
 {
-  if ( mClusters.size() > 4086 )
+  uint16_t maxCluster = mClusters.size() > 4086 ? 0xfff0 : 0xff0;
+
+  while ( cluster > 0 && cluster < maxCluster )
   {
-    while ( cluster > 0 && cluster < 0xfff0 )
-    {
-      if ( cluster > mClusters.size() )
-        throw Ex{} << "Cluster index " << cluster << " exceeds FAT size of " << mClusters.size();
+    if ( cluster > mClusters.size() )
+      throw Ex{} << "Cluster index " << cluster << " exceeds FAT size of " << mClusters.size();
 
-      co_yield cluster;
+    co_yield cluster;
 
-      cluster = mClusters[cluster];
-    }
-  }
-  else
-  {
-    while ( cluster > 0 && cluster < 0xff0 )
-    {
-      if ( cluster > mClusters.size() )
-        throw Ex{} << "Cluster index " << cluster << " exceeds FAT size of " << mClusters.size();
-
-      co_yield cluster;
-
-      cluster = mClusters[cluster];
-    }
+    cluster = mClusters[cluster];
   }
 }
 
@@ -119,4 +106,19 @@ std::vector<uint16_t> FAT::findFreeClusters( uint32_t requiredClusters ) const
   }
 
   return {};
+}
+
+void FAT::freeClusters( uint16_t startCluster )
+{
+  uint16_t maxCluster = mClusters.size() > 4086 ? 0xfff0 : 0xff0;
+
+  while ( startCluster > 0 && startCluster < maxCluster )
+  {
+    auto cluster = startCluster;
+    if ( cluster > mClusters.size() )
+      throw Ex{} << "Cluster index " << cluster << " exceeds FAT size of " << mClusters.size();
+
+    startCluster = 0;
+    std::swap( startCluster, mClusters[cluster] );
+  }
 }

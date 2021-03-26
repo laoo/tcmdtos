@@ -60,17 +60,46 @@ void RawVolume::readSectors( uint32_t sector, uint32_t count, std::span<uint8_t>
   }
 }
 
+void RawVolume::writeSectors( uint32_t sector, uint32_t count, std::span<uint8_t const> source )
+{
+  LARGE_INTEGER sectorOffset;
+  sectorOffset.QuadPart = sector * RAW_SECTOR_SIZE;
+
+  OVERLAPPED overlapped = {};
+  overlapped.Offset = sectorOffset.LowPart;
+  overlapped.OffsetHigh = sectorOffset.HighPart;
+
+  if ( source.size() != count * RAW_SECTOR_SIZE )
+    throw Ex{};
+
+  if ( !WriteFile( mHandle, source.data(), (DWORD)source.size(), NULL, &overlapped ) )
+  {
+    auto err = GetLastError();
+    if ( err != ERROR_IO_PENDING )
+    {
+      throw Ex{} << "Error initiating write to file: " << err;
+    }
+  }
+
+  DWORD bytesCount;
+
+  if ( !GetOverlappedResult( mHandle, &overlapped, &bytesCount, TRUE ) )
+  {
+    throw Ex{} << "Error writing to file: " << GetLastError();
+  }
+}
+
 RawVolume::RawVolume( wchar_t volume )
 {
 }
 
 RawVolume::RawVolume( std::filesystem::path const & path )
 {
-  mHandle = CreateFile( path.generic_wstring().c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL );
+  mHandle = CreateFile( path.generic_wstring().c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL );
 
   if ( mHandle == INVALID_HANDLE_VALUE )
   {
-    throw Ex{} << "Error opening input file: " << GetLastError();
+    throw Ex{} << "Error opening input/output file: " << GetLastError();
   }
 }
 
