@@ -2,31 +2,95 @@
 #include "DirectoryEntry.hpp"
 #include "Partition.hpp"
 
-DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition> partition ) : mPartition{ std::move( partition ) }, mParent{}, mYear{}, mMonth{}, mDay{}, mHour{}, mMinute{}, mSecond{}, mSize{}, mCluster{}, mSector{}, mOffset{}, mAttrib{ ATTR_DIRECTORY }, mName{}, mExt{}
+namespace
 {
-  std::fill( mName.begin(), mName.end(), ' ' );
+template<size_t SIZE>
+static bool match( std::array<char, SIZE> const & left, std::array<char, SIZE> const & right )
+{
+  for ( size_t i = 0; i < SIZE; ++i )
+  {
+    if ( left[i] == '?' || right[i] == '?' )
+      continue;
+    if ( left[i] != right[i] )
+      return false;
+  }
+
+  return true;
+}
+
+bool extractNameExt( std::string_view src, std::array<char, 11> & nameExt )
+{
+  std::fill( nameExt.begin(), nameExt.end(), ' ' );
+
+  size_t pos = 0;
+  for ( auto c : src )
+  {
+    if ( c == '.' )
+    {
+      nameExt[8] = nameExt[9] = nameExt[10] = ' ';
+      pos = 8;
+    }
+    else if ( c == '*' )
+    {
+      while ( pos < nameExt.size() )
+        nameExt[pos++] = '?';
+    }
+    else if ( pos < nameExt.size() )
+    {
+      nameExt[pos++] = c;
+    }
+  }
+
+  return true;
+}
+
+bool extractNameExt( std::string_view src, std::array<char, 11> & nameExt, std::string_view & rest )
+{
+  auto backSlash = std::find( src.cbegin(), src.cend(), '\\' );
+
+  if ( extractNameExt( std::string_view{ src.data(), (size_t)std::distance( src.cbegin(), backSlash ) }, nameExt ) )
+  {
+    if ( backSlash == src.cend() )
+      rest = {};
+    else
+    {
+      rest = std::string_view{ &*backSlash + 1, (size_t)std::distance( backSlash + 1, src.cend() ) };
+    }
+
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+}
+
+DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition> partition ) : mPartition{ std::move( partition ) }, mParent{}, mYear{}, mMonth{}, mDay{}, mHour{}, mMinute{}, mSecond{}, mSize{}, mCluster{}, mSector{}, mOffset{}, mAttrib{ ATTR_DIRECTORY }, mNameExt{}
+{
+  std::fill( mNameExt.begin(), mNameExt.end(), ' ' );
 
   int number = mPartition->number();
 
-  mName[0] = '0' + ( number / 10 ) % 10;
-  mName[1] = '0' + number % 10;
+  mNameExt[0] = '0' + ( number / 10 ) % 10;
+  mNameExt[1] = '0' + number % 10;
 
   switch ( mPartition->type() )
   {
   case PInfo::Type::GEM:
-    std::copy_n( "GEM", 3, mExt.begin() );
+    std::copy_n( "GEM", 3, mNameExt.begin() + 8 );
     break;
   case PInfo::Type::BGM:
-    std::copy_n( "BGM", 3, mExt.begin() );
+    std::copy_n( "BGM", 3, mNameExt.begin() + 8 );
     break;
   default:
-    std::fill( mExt.begin(), mExt.end(), ' ' );
     break;
   }
 }
 
 DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition> partition, TOSDir const & dir, uint32_t sector, uint32_t offset, std::shared_ptr<DirectoryEntry const> parent ) :
-  mPartition{ std::move( partition ) }, mParent{ std::move( parent ) }, mYear{}, mMonth{}, mDay{}, mHour{}, mMinute{}, mSecond{}, mSize{}, mCluster{}, mSector{ sector }, mOffset{ offset }, mAttrib{}, mName{}, mExt{}
+  mPartition{ std::move( partition ) }, mParent{ std::move( parent ) }, mYear{}, mMonth{}, mDay{}, mHour{}, mMinute{}, mSecond{}, mSize{}, mCluster{}, mSector{ sector }, mOffset{ offset }, mAttrib{}, mNameExt{}
 {
   mSize = dir.fsize;
   mCluster = dir.scluster;
@@ -37,10 +101,9 @@ DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition> partition, TOSDir con
   mMinute =  ( dir.ftime & 0b0000011111100000 ) >> 5;
   mSecond =  ( dir.ftime & 0b0000000000011111 );
   mAttrib = dir.attrib;
-  std::copy( dir.fname.cbegin(), dir.fname.cend(), mName.begin() );
-  std::copy( dir.fext.cbegin(), dir.fext.cend(), mExt.begin() );
-  if ( mName[0] == 0x05 )
-    mName[0] = (char)0xe5;
+  std::copy( dir.fnameExt.cbegin(), dir.fnameExt.cend(), mNameExt.begin() );
+  if ( mNameExt[0] == 0x05 )
+    mNameExt[0] = (char)0xe5;
 }
 
 uint32_t DirectoryEntry::getYear() const
@@ -115,47 +178,56 @@ bool DirectoryEntry::isNew() const
 
 std::string_view DirectoryEntry::getName() const
 {
-  std::string_view sv{ mName.data(), mName.size() };
+  std::string_view sv{ mNameExt.data(), 8 };
   auto pos = sv.find_last_not_of( ' ' );
   if ( pos == std::string_view::npos )
     return sv;
   else
-    return std::string_view{ mName.data(), pos + 1 };
+    return std::string_view{ mNameExt.data(), pos + 1 };
 }
 
 std::string_view DirectoryEntry::getExt() const
 {
-  std::string_view sv{ mExt.data(), mExt.size() };
+  std::string_view sv{ mNameExt.data() + 8, 3 };
   auto pos = sv.find_last_not_of( ' ' );
   if ( pos == std::string_view::npos )
     return {};
   else
-    return std::string_view{ mExt.data(), pos + 1 };
+    return std::string_view{ mNameExt.data() + 8, pos + 1 };
 }
 
-std::shared_ptr<DirectoryEntry> DirectoryEntry::find( std::string_view namesv ) const
+std::vector<std::shared_ptr<DirectoryEntry>> DirectoryEntry::find( std::string_view namesv ) const
 {
-  std::array<char, 8> name{};
-  std::array<char, 3> ext{};
+  std::array<char, 11> nameExt{};
   std::string_view rest;
 
-  if ( extractNameExt( namesv, name, ext, rest ) == false )
+  if ( extractNameExt( namesv, nameExt, rest ) == false )
     return {};
+
+  std::vector<std::shared_ptr<DirectoryEntry>> result;
 
   for ( auto const& dir : listDir() )
   {
-    if ( std::mismatch( name.cbegin(), name.cend(), dir->mName.cbegin() ).first != name.cend() )
+    if ( !rest.empty() && !dir->isDirectory() )
       continue;
-    if ( std::mismatch( ext.cbegin(), ext.cend(), dir->mExt.cbegin() ).first != ext.cend() )
+
+    if ( !match( nameExt, dir->mNameExt ) )
       continue;
 
     if ( rest.empty() )
-      return dir;
+    {
+      result.push_back( dir );
+    }
     else
-      return dir->find( rest );
+    {
+      for ( auto r : dir->find( rest ) )
+      {
+        result.push_back( std::move( r ) );
+      }
+    }
   }
 
-  return {};
+  return result;
 }
 
 cppcoro::generator<std::shared_ptr<DirectoryEntry>> DirectoryEntry::listDir() const
@@ -175,62 +247,9 @@ std::pair<uint32_t, uint32_t> DirectoryEntry::getLocationInPartition() const
 
 bool DirectoryEntry::unlink()
 {
-  if ( isDirectory() )
-    return false;
-
-  mPartition->unlink( shared_from_this() );
-  return true;
-}
-
-bool DirectoryEntry::extractNameExt( std::string_view src, std::array<char, 8> & name, std::array<char, 3> & ext, std::string_view & rest )
-{
-  auto backSlash = std::find( src.cbegin(), src.cend(), '\\' );
-
-  if ( extractNameExt( std::string_view{ src.data(), (size_t)std::distance( src.cbegin(), backSlash ) }, name, ext ) )
-  {
-    if ( backSlash == src.cend() )
-      rest = {};
-    else
-    {
-      rest = std::string_view{ &*backSlash + 1, (size_t)std::distance( backSlash + 1, src.cend() ) };
-    }
-
-    return true;
-  }
-  else
-  {
-    return false;
-  }
+  return mPartition->unlink( shared_from_this() );
 }
 
 
-bool DirectoryEntry::extractNameExt( std::string_view src, std::array<char, 8> & name, std::array<char, 3> & ext )
-{
-  auto dotIt = std::find( src.cbegin(), src.cend(), '.' );
-  auto nameSize = std::distance( src.cbegin(), dotIt );
-  if ( nameSize > 8 )
-    return false;
-
-  if ( dotIt == src.cend() )
-  {
-    std::fill( name.begin(), name.end(), ' ' );
-    std::fill( ext.begin(), ext.end(), ' ' );
-    std::copy( src.cbegin(), dotIt, name.begin() );
-  }
-  else
-  {
-    auto extSize = std::distance( dotIt + 1, src.cend() );
-    if ( extSize > 3 )
-      return false;
-
-    std::fill( name.begin(), name.end(), ' ' );
-    std::fill( ext.begin(), ext.end(), ' ' );
-
-    std::copy( src.cbegin(), dotIt, name.begin() );
-    std::copy( dotIt + 1, src.cend(), ext.begin() );
-  }
-
-  return true;
-}
 
 

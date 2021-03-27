@@ -27,7 +27,7 @@ std::span<std::shared_ptr<Partition>const> TosVolume::partitions() const
   return { mPartitions.data(), mPartitions.size() };
 }
 
-std::shared_ptr<DirectoryEntry> TosVolume::find( char const * path ) const
+std::vector<std::shared_ptr<DirectoryEntry>> TosVolume::find( char const * path ) const
 {
   std::string_view sv{ path };
 
@@ -41,6 +41,24 @@ std::shared_ptr<DirectoryEntry> TosVolume::find( char const * path ) const
     return {};
 
   return p->rootDir()->find( { &*(backSlash + 1), (size_t)std::distance( backSlash + 1, sv.end() ) } );
+}
+
+bool TosVolume::unlink( char const * path ) const
+{
+  std::string_view sv{ path };
+
+  auto backSlash = std::find( sv.cbegin(), sv.cend(), '\\' );
+
+  if ( backSlash == sv.cend() )
+    return false;
+
+  auto p = findPartition( { path, (size_t)std::distance( sv.cbegin(), backSlash ) } );
+  if ( !p )
+    return false;
+
+  auto elements = p->rootDir()->find( { &*( backSlash + 1 ), (size_t)std::distance( backSlash + 1, sv.end() ) } );
+
+  return p->unlink( elements );
 }
 
 std::shared_ptr<Partition> TosVolume::findPartition( std::string_view path ) const

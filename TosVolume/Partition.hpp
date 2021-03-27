@@ -5,6 +5,7 @@
 
 class RawVolume;
 class FAT;
+class WriteTransaction;
 
 class PInfo
 {
@@ -31,8 +32,7 @@ public:
 #pragma pack(push, 1)
 struct TOSDir
 {
-  std::array<char, 8> fname;
-  std::array<char, 3> fext;
+  std::array<char, 11> fnameExt;
   uint8_t attrib;
   std::array<uint8_t, 10> res;
   uint16_t ftime;
@@ -52,6 +52,7 @@ public:
   int number() const;
 
   std::shared_ptr<DirectoryEntry> rootDir();
+  bool unlink( std::vector<std::shared_ptr<DirectoryEntry>> dirs );
 
 private:
   friend class DirectoryEntry;
@@ -59,7 +60,7 @@ private:
   cppcoro::generator<std::shared_ptr<DirectoryEntry>> listDir( std::shared_ptr<DirectoryEntry const> dir );
   cppcoro::generator<std::span<char const>> read( std::shared_ptr<DirectoryEntry const> dir ) const;
   
-  void unlink( std::shared_ptr<DirectoryEntry> dir );
+  bool unlink( std::shared_ptr<DirectoryEntry> dir, WriteTransaction * trans = nullptr );
 
 private:
 #pragma pack(push, 1)

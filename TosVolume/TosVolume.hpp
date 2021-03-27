@@ -11,7 +11,8 @@ public:
 
   std::span<std::shared_ptr<Partition> const> partitions() const;
 
-  std::shared_ptr<DirectoryEntry> find( char const* path ) const;
+  std::vector<std::shared_ptr<DirectoryEntry>> find( char const* path ) const;
+  bool unlink( char const* path ) const;
 
 private:
   std::shared_ptr<Partition> findPartition( std::string_view path ) const;

@@ -42,11 +42,8 @@ struct State
         {
           if ( dir->isDirectory() )
           {
-            if ( dir->getName() != "." && dir->getName() != ".." )
-            {
-              folderList.push_back( dir );
-              part.fileList.push_back( dir );
-            }
+            folderList.push_back( dir );
+            part.fileList.push_back( dir );
           }
           else
           {
@@ -209,22 +206,11 @@ int __stdcall DeleteFiles( char * packedFile, char * deleteList )
 
     while ( *deleteList )
     {
-      if ( auto element = volume.find( deleteList ) )
-      {
-        if ( !element->isDirectory() )
-        {
-          element->unlink();
-        }
-        else
-        {
-          return E_NOT_SUPPORTED;
-        }
-      }
-      else
+      if ( !volume.unlink( deleteList ) )
       {
         return E_NO_FILES;
       }
-
+      
       auto size = strlen( deleteList );
       deleteList += size + 1;
     }

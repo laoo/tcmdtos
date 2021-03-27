@@ -91,10 +91,18 @@ cppcoro::generator<std::shared_ptr<DirectoryEntry>> Partition::listDir( std::sha
       {
         TOSDir const * dir = reinterpret_cast<TOSDir const *>( clusterBuf.data() + i * sizeof( TOSDir ) );
 
-        if ( dir->fname[0] == 0 )
+        if ( dir->fnameExt[0] == 0 )
           co_return;
 
-        if ( dir->fname[0] != (char)0xe5 )
+        static constexpr char dot1[] = { ".          " };
+        static constexpr char dot2[] = { "..         " };
+
+        if ( std::mismatch( dir->fnameExt.cbegin(), dir->fnameExt.cend(), dot1 ).first == dir->fnameExt.cend() )
+          continue;
+        if ( std::mismatch( dir->fnameExt.cbegin(), dir->fnameExt.cend(), dot2 ).first == dir->fnameExt.cend() )
+          continue;
+
+        if ( dir->fnameExt[0] != (char)0xe5 )
         {
           co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir, sector, (uint32_t)( i * sizeof( TOSDir ) ), parent );
         }
@@ -110,10 +118,10 @@ cppcoro::generator<std::shared_ptr<DirectoryEntry>> Partition::listDir( std::sha
     {
       TOSDir const* dir = reinterpret_cast<TOSDir const*>( rootDir.data() + i * sizeof( TOSDir ) );
     
-      if ( dir->fname[0] == 0 )
+      if ( dir->fnameExt[0] == 0 )
         co_return;
     
-      if ( dir->fname[0] != (char)0xe5 )
+      if ( dir->fnameExt[0] != (char)0xe5 )
       {
         co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir, mDirPos, (uint32_t)( i * sizeof( TOSDir ) ), parent );
       }
@@ -144,17 +152,45 @@ cppcoro::generator<std::span<char const>> Partition::read( std::shared_ptr<Direc
   }
 }
 
-void Partition::unlink( std::shared_ptr<DirectoryEntry> dir )
+bool Partition::unlink( std::shared_ptr<DirectoryEntry> dir, WriteTransaction * trans )
 {
+  WriteTransaction transaction{};
+
+  if ( dir->isDirectory() )
+  {
+    unlink( dir, &transaction );
+  }
   if ( auto startCluster = dir->getCluster() )
   {
-    auto transaction = mFAT->freeClusters( startCluster );
+    transaction += mFAT->freeClusters( startCluster );
 
     auto [sector, offset] = dir->getLocationInPartition();
     transaction.add( sector, offset, std::vector<uint8_t>( 1, 0xe5 ) );
+  }
 
+  if ( trans )
+  {
+    *trans += transaction;
+  }
+  else
+  {
     transaction.commit( *mRawVolume );
   }
+
+  return true;
+}
+
+bool Partition::unlink( std::vector<std::shared_ptr<DirectoryEntry>> dirs )
+{
+  WriteTransaction transaction;
+
+  for ( auto dir : dirs )
+  {
+    unlink( dir, &transaction );
+  }
+
+  transaction.commit( *mRawVolume );
+  return true;
 }
 
 PInfo::Type Partition::type() const
