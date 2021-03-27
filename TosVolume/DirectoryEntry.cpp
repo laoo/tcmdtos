@@ -2,10 +2,27 @@
 #include "DirectoryEntry.hpp"
 #include "Partition.hpp"
 
-DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition> partition ) : mPartition{ std::move( partition ) }, mParent{}, mYear{}, mMonth{}, mDay{}, mHour{}, mMinute{}, mSecond{}, mSize{}, mCluster{}, mAttrib{}, mName{}, mExt{ ATTR_DIRECTORY }
+DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition> partition ) : mPartition{ std::move( partition ) }, mParent{}, mYear{}, mMonth{}, mDay{}, mHour{}, mMinute{}, mSecond{}, mSize{}, mCluster{}, mSector{}, mOffset{}, mAttrib{ ATTR_DIRECTORY }, mName{}, mExt{}
 {
   std::fill( mName.begin(), mName.end(), ' ' );
-  std::fill( mExt.begin(), mExt.end(), ' ' );
+
+  int number = mPartition->number();
+
+  mName[0] = '0' + ( number / 10 ) % 10;
+  mName[1] = '0' + number % 10;
+
+  switch ( mPartition->type() )
+  {
+  case PInfo::Type::GEM:
+    std::copy_n( "GEM", 3, mExt.begin() );
+    break;
+  case PInfo::Type::BGM:
+    std::copy_n( "BGM", 3, mExt.begin() );
+    break;
+  default:
+    std::fill( mExt.begin(), mExt.end(), ' ' );
+    break;
+  }
 }
 
 DirectoryEntry::DirectoryEntry( std::shared_ptr<Partition> partition, TOSDir const & dir, uint32_t sector, uint32_t offset, std::shared_ptr<DirectoryEntry const> parent ) :

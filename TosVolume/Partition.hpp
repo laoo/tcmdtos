@@ -48,8 +48,8 @@ public:
   Partition( int number, PInfo const & partition, uint32_t offset, std::shared_ptr<RawVolume> rawVolume );
   virtual ~Partition() = default;
 
-  std::string getLabel();
   PInfo::Type type() const;
+  int number() const;
 
   std::shared_ptr<DirectoryEntry> rootDir();
 

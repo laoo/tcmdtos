@@ -10,9 +10,7 @@ struct State
 {
   struct Part
   {
-    std::string label;
     std::vector<std::shared_ptr<DirectoryEntry>> fileList;
-    std::shared_ptr<DirectoryEntry> rootDir;
   };
 
   State( char const * name ) : volume{ name }, parts{}, arcName{ name }
@@ -24,10 +22,11 @@ struct State
       Part part{};
 
       auto partition = volume.partitions()[i];
-      part.label = partition->getLabel();
-      part.rootDir = partition->rootDir();
+      auto rootDir = partition->rootDir();
 
-      for ( auto const & dir : part.rootDir->listDir() )
+      part.fileList.push_back( rootDir );
+
+      for ( auto const & dir : rootDir->listDir() )
       {
         if ( dir->isDirectory() )
         {
@@ -100,14 +99,7 @@ int __stdcall ReadHeader( HANDLE hArcData, tHeaderData * headerData )
 
     if ( part.fileList.empty() )
     {
-      if ( part.rootDir )
-      {
-        std::swap( part.rootDir, file );
-      }
-      else
-      {
-        state->parts.pop_back();
-      }
+      state->parts.pop_back();
     }
     else
     {
@@ -118,11 +110,6 @@ int __stdcall ReadHeader( HANDLE hArcData, tHeaderData * headerData )
     if ( file )
     {
       auto it = headerData->FileName;
-      for ( auto c : part.label )
-      {
-        *it++ = c;
-      }
-      *it++ = '\\';
       file->fullPath( it );
       if ( file->isReadOnly() )
         headerData->FileAttr |= 0x01;

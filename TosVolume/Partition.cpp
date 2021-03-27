@@ -68,40 +68,6 @@ Partition::Partition( int number, PInfo const & partition, uint32_t offset, std:
   mFAT->load( *mRawVolume );
 }
 
-std::string Partition::getLabel()
-{
-  std::string label;
-  for ( auto const & dir : rootDir()->listDir() )
-  {
-    if ( dir->isLabel() )
-    {
-      dir->nameWithExt( std::back_inserter( label ) );
-      break;
-    }
-  }
-
-  std::stringstream ss;
-  ss << std::setw( 2 ) << std::setfill( '0' ) << mNumber;
-  if ( !label.empty() )
-  {
-    ss << "." << label;
-  }
-  switch ( type() )
-  {
-  case PInfo::Type::GEM:
-    ss << ".GEM";
-    break;
-  case PInfo::Type::BGM:
-    ss << ".BGM";
-    break;
-  default:
-    assert( false );
-    break;
-  }
-
-  return ss.str();
-}
-
 std::shared_ptr<DirectoryEntry> Partition::rootDir()
 {
   return std::make_shared<DirectoryEntry>( shared_from_this() );
@@ -149,7 +115,7 @@ cppcoro::generator<std::shared_ptr<DirectoryEntry>> Partition::listDir( std::sha
     
       if ( dir->fname[0] != (char)0xe5 )
       {
-        co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir, mDirPos, (uint32_t)( i * sizeof( TOSDir ) ) );
+        co_yield std::make_shared<DirectoryEntry>( shared_from_this(), *dir, mDirPos, (uint32_t)( i * sizeof( TOSDir ) ), parent );
       }
     }
   }
@@ -194,4 +160,9 @@ void Partition::unlink( std::shared_ptr<DirectoryEntry> dir )
 PInfo::Type Partition::type() const
 {
   return mType;
+}
+
+int Partition::number() const
+{
+  return mNumber;
 }
