@@ -61,6 +61,7 @@ private:
   cppcoro::generator<std::span<char const>> read( std::shared_ptr<DirectoryEntry const> dir ) const;
   
   bool unlink( std::shared_ptr<DirectoryEntry> dir, WriteTransaction * trans = nullptr );
+  void removeDirectoryEntry( std::shared_ptr<DirectoryEntry> dir, WriteTransaction & trans );
 
 private:
 #pragma pack(push, 1)

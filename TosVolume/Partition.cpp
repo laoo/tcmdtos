@@ -75,6 +75,9 @@ std::shared_ptr<DirectoryEntry> Partition::rootDir()
 
 cppcoro::generator<std::shared_ptr<DirectoryEntry>> Partition::listDir( std::shared_ptr<DirectoryEntry const> parent )
 {
+  if ( !parent->isDirectory() )
+    co_return;
+
   if ( auto startCluster = parent->getCluster() )
   {
     std::string clusterBuf;
@@ -163,9 +166,7 @@ bool Partition::unlink( std::shared_ptr<DirectoryEntry> dir, WriteTransaction * 
   if ( auto startCluster = dir->getCluster() )
   {
     transaction += mFAT->freeClusters( startCluster );
-
-    auto [sector, offset] = dir->getLocationInPartition();
-    transaction.add( sector, offset, std::vector<uint8_t>( 1, 0xe5 ) );
+    removeDirectoryEntry( dir, transaction );
   }
 
   if ( trans )
@@ -180,6 +181,11 @@ bool Partition::unlink( std::shared_ptr<DirectoryEntry> dir, WriteTransaction * 
   return true;
 }
 
+void Partition::removeDirectoryEntry( std::shared_ptr<DirectoryEntry> dir, WriteTransaction & trans )
+{
+  auto [sector, offset] = dir->getLocationInPartition();
+  trans.add( sector, offset, std::vector<uint8_t>( 1, 0xe5 ) );
+}
 bool Partition::unlink( std::vector<std::shared_ptr<DirectoryEntry>> dirs )
 {
   WriteTransaction transaction;
