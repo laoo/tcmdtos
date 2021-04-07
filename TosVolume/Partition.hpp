@@ -1,11 +1,11 @@
 #pragma once
 
-#include "DirectoryEntry.hpp"
 #include "generator.hpp"
 
+class Dir;
 class RawVolume;
 class FAT;
-class WriteTransaction;
+class BaseFile;
 
 class PInfo
 {
@@ -29,18 +29,6 @@ public:
   uint32_t partitionSize() const;
 };
 
-#pragma pack(push, 1)
-struct TOSDir
-{
-  std::array<char, 11> fnameExt;
-  uint8_t attrib;
-  std::array<uint8_t, 10> res;
-  uint16_t ftime;
-  uint16_t fdate;
-  uint16_t scluster;
-  uint32_t fsize;
-};
-#pragma pack(pop)
 
 class Partition : public std::enable_shared_from_this<Partition>
 {
@@ -51,17 +39,14 @@ public:
   PInfo::Type type() const;
   int number() const;
 
-  std::shared_ptr<DirectoryEntry> rootDir();
-  bool unlink( std::vector<std::shared_ptr<DirectoryEntry>> dirs );
+  std::shared_ptr<Dir> rootDir();
 
 private:
   friend class DirectoryEntry;
 
-  cppcoro::generator<std::shared_ptr<DirectoryEntry>> listDir( std::shared_ptr<DirectoryEntry const> dir );
-  cppcoro::generator<std::span<char const>> read( std::shared_ptr<DirectoryEntry const> dir ) const;
+  std::shared_ptr<BaseFile> rootDirFile() const;
   
-  bool unlink( std::shared_ptr<DirectoryEntry> dir, WriteTransaction * trans = nullptr );
-  void removeDirectoryEntry( std::shared_ptr<DirectoryEntry> dir, WriteTransaction & trans );
+  //void removeDirectoryEntry( std::shared_ptr<DirectoryEntry> dir, WriteTransaction & trans );
 
 private:
 #pragma pack(push, 1)

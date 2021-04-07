@@ -4,29 +4,32 @@
 #include "TosVolume/Ex.hpp"
 #include "TosVolume/Log.hpp"
 #include "TosVolume/Partition.hpp"
+#include "TosVolume/Dir.hpp"
+#include "TosVolume/File.hpp"
+#include "TosVolume/DirEntry.hpp"
 
 
 struct State
 {
   struct Part
   {
-    std::vector<std::shared_ptr<DirectoryEntry>> fileList;
+    std::vector<std::shared_ptr<DirEntry>> fileList;
   };
 
   State( char const * name ) : volume{ name }, parts{}, arcName{ name }
   {
     for ( size_t i = 0; i < volume.partitions().size(); ++i )
     {
-      std::deque<std::shared_ptr<DirectoryEntry>> folderList;
+      std::deque<std::shared_ptr<DirEntry>> folderList;
 
       Part part{};
 
       auto partition = volume.partitions()[i];
       auto rootDir = partition->rootDir();
 
-      part.fileList.push_back( rootDir );
+      part.fileList.push_back( rootDir->baseFile()->dirEntry() );
 
-      for ( auto const & dir : rootDir->listDir() )
+      for ( auto dir : rootDir->list() )
       {
         if ( dir->isDirectory() )
         {
@@ -38,16 +41,17 @@ struct State
 
       while ( !folderList.empty() )
       {
-        for ( auto const & dir : folderList.front()->listDir() )
+        auto dir = folderList.front()->openDir();
+        for ( auto const & dirEntry : dir->list() )
         {
-          if ( dir->isDirectory() )
+          if ( dirEntry->isDirectory() )
           {
-            folderList.push_back( dir );
-            part.fileList.push_back( dir );
+            folderList.push_back( dirEntry );
+            part.fileList.push_back( dirEntry );
           }
           else
           {
-            part.fileList.push_back( dir );
+            part.fileList.push_back( dirEntry );
           }
         }
         folderList.pop_front();
@@ -61,7 +65,7 @@ struct State
   TosVolume volume;
   std::vector<Part> parts;
   std::string arcName;
-  std::shared_ptr<DirectoryEntry> currentFile;
+  std::shared_ptr<DirEntry> currentFile;
 };
 
 tProcessDataProc processDataProc;
@@ -92,7 +96,7 @@ int __stdcall ReadHeader( HANDLE hArcData, tHeaderData * headerData )
 
     auto & part = state->parts.back();
 
-    std::shared_ptr<DirectoryEntry> file;
+    std::shared_ptr<DirEntry> file;
 
     if ( part.fileList.empty() )
     {
@@ -157,9 +161,10 @@ int __stdcall ProcessFile( HANDLE hArcData, int operation, char * destPath, char
     }
 
     std::ofstream fout{ path, std::ios::binary };
-    for ( auto span : state->currentFile->read() )
+    auto file = state->currentFile->openFile();
+    for ( auto span : file->read() )
     {
-      fout.write( span.data(), span.size() );
+      fout.write( std::bit_cast<const char*>( span.data() ), span.size() );
       if ( processDataProc( nullptr, (int)span.size() ) == 0 )
         return E_EABORTED;
     }
@@ -187,7 +192,7 @@ void __stdcall SetProcessDataProc( HANDLE hArcData, tProcessDataProc pProcessDat
 
 int __stdcall GetPackerCaps()
 {
-  return PK_CAPS_MULTIPLE | PK_CAPS_DELETE;
+  return PK_CAPS_MULTIPLE; // | PK_CAPS_DELETE;
 }
 
 int __stdcall PackFiles( char * PackedFile, char * SubPath, char * SrcPath, char * AddList, int Flags )
@@ -197,27 +202,27 @@ int __stdcall PackFiles( char * PackedFile, char * SubPath, char * SrcPath, char
 
 int __stdcall DeleteFiles( char * packedFile, char * deleteList )
 {
-  try
-  {
-    TosVolume volume{ packedFile };
+  //try
+  //{
+  //  TosVolume volume{ packedFile };
 
-    if ( !deleteList )
-      return E_NO_FILES;
+  //  if ( !deleteList )
+  //    return E_NO_FILES;
 
-    while ( *deleteList )
-    {
-      if ( !volume.unlink( deleteList ) )
-      {
-        return E_NO_FILES;
-      }
-      
-      auto size = strlen( deleteList );
-      deleteList += size + 1;
-    }
+  //  while ( *deleteList )
+  //  {
+  //    if ( !volume.unlink( deleteList ) )
+  //    {
+  //      return E_NO_FILES;
+  //    }
+  //    
+  //    auto size = strlen( deleteList );
+  //    deleteList += size + 1;
+  //  }
 
-    return 0;
-  }
-  catch ( [[maybe_unused]] Ex const & ex )
+  //  return 0;
+  //}
+  //catch ( [[maybe_unused]] Ex const & ex )
   {
     return E_BAD_ARCHIVE;
   }

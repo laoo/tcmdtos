@@ -6,9 +6,10 @@
     <ClCompile Include="RawVolume.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="Partition.cpp" />
-    <ClCompile Include="DirectoryEntry.cpp" />
     <ClCompile Include="FAT.cpp" />
-    <ClCompile Include="WriteTransaction.cpp" />
+    <ClCompile Include="File.cpp" />
+    <ClCompile Include="Dir.cpp" />
+    <ClCompile Include="DirEntry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.hpp" />
@@ -18,8 +19,9 @@
     <ClInclude Include="Ex.hpp" />
     <ClInclude Include="Log.hpp" />
     <ClInclude Include="Partition.hpp" />
-    <ClInclude Include="DirectoryEntry.hpp" />
     <ClInclude Include="FAT.hpp" />
-    <ClInclude Include="WriteTransaction.hpp" />
+    <ClInclude Include="File.hpp" />
+    <ClInclude Include="DirEntry.hpp" />
+    <ClInclude Include="Dir.hpp" />
   </ItemGroup>
 </Project>

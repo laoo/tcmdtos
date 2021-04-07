@@ -163,8 +163,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="DirectoryEntry.hpp" />
+    <ClInclude Include="Dir.hpp" />
+    <ClInclude Include="DirEntry.hpp" />
     <ClInclude Include="FAT.hpp" />
+    <ClInclude Include="File.hpp" />
     <ClInclude Include="Partition.hpp" />
     <ClInclude Include="Ex.hpp" />
     <ClInclude Include="generator.hpp" />
@@ -172,11 +174,12 @@
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="RawVolume.hpp" />
     <ClInclude Include="TosVolume.hpp" />
-    <ClInclude Include="WriteTransaction.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DirectoryEntry.cpp" />
+    <ClCompile Include="Dir.cpp" />
+    <ClCompile Include="DirEntry.cpp" />
     <ClCompile Include="FAT.cpp" />
+    <ClCompile Include="File.cpp" />
     <ClCompile Include="Partition.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="pch.cpp">
@@ -187,7 +190,6 @@
     </ClCompile>
     <ClCompile Include="RawVolume.cpp" />
     <ClCompile Include="TosVolume.cpp" />
-    <ClCompile Include="WriteTransaction.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

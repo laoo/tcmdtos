@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Partition.hpp"
-class DirectoryEntry;
+class DirEntry;
 
 class TosVolume
 {
@@ -11,8 +11,8 @@ public:
 
   std::span<std::shared_ptr<Partition> const> partitions() const;
 
-  std::vector<std::shared_ptr<DirectoryEntry>> find( char const* path ) const;
-  bool unlink( char const* path ) const;
+  cppcoro::generator<std::shared_ptr<DirEntry>> find( char const* path ) const;
+  //bool unlink( char const* path ) const;
 
 private:
   std::shared_ptr<Partition> findPartition( std::string_view path ) const;
