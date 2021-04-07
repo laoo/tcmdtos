@@ -97,12 +97,22 @@ uint32_t DirEntry::getSizeInBytes() const
 
 std::string_view DirEntry::getName() const
 {
-  return std::string_view{ mTOS->fnameExt.data(), 8 };
+  std::string_view sv{ mTOS->fnameExt.data(), 8 };
+  auto pos = sv.find_last_not_of( ' ' );
+  if ( pos == std::string_view::npos )
+    return sv;
+  else
+    return std::string_view{ mTOS->fnameExt.data(), pos + 1 };
 }
 
 std::string_view DirEntry::getExt() const
 {
-  return std::string_view{ mTOS->fnameExt.data() + 8, 3 };
+  std::string_view sv{ mTOS->fnameExt.data() + 8, 3 };
+  auto pos = sv.find_last_not_of( ' ' );
+  if ( pos == std::string_view::npos )
+    return {};
+  else
+    return std::string_view{ mTOS->fnameExt.data() + 8, pos + 1 };
 }
 
 std::array<char, 11> const& DirEntry::getNameExtArray() const
