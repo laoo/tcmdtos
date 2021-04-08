@@ -1,10 +1,11 @@
 #pragma once
 
 #include "generator.hpp"
+#include "WriteTransaction.hpp"
 
 class RawVolume;
 
-class FAT
+class FAT : public WTActor, public std::enable_shared_from_this<FAT>
 {
 public:
 
@@ -15,6 +16,8 @@ public:
   };
 
   FAT( uint32_t pos, uint32_t size, uint32_t clusterEnd, uint32_t clusterSize, uint32_t dataPos );
+  ~FAT() override = default;
+
   void load( RawVolume & volume );
 
   uint32_t clusterSize() const;
@@ -25,20 +28,15 @@ public:
   Range findFreeClusterRange( uint32_t reqiredClusters ) const;
   std::vector<uint16_t> findFreeClusters( uint32_t reqiredClusters ) const;
 
-  //WriteTransaction freeClusters( uint16_t startCluster );
+  void freeClusters( WriteTransaction & trans, uint16_t startCluster );
 
-private:
-  //class Modifier
-  //{
-  //public:
-  //  void add( uint16_t cluster );
-  //  WriteTransaction commit( FAT const& fat );
-
-  //  std::vector<uint16_t> mModified;
-  //};
+  void beginTransaction() override;
+  void commitTransaction( RawVolume & volume ) override;
+  void endTransaction() override;
 
 private:
   std::vector<uint16_t> mClusters;
+  std::vector<uint16_t> mOriginalClusters;
   uint32_t mPos;
   uint32_t mSize;
   uint32_t mClusterEnd;

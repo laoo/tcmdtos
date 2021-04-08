@@ -3,8 +3,9 @@
 #include "RawVolume.hpp"
 #include "Ex.hpp"
 #include "Log.hpp"
+#include "WriteTransaction.hpp"
 
-FAT::FAT( uint32_t pos, uint32_t size, uint32_t clusterEnd, uint32_t clusterSize, uint32_t dataPos ) : mClusters{}, mPos{ pos }, mSize{ size }, mClusterEnd{ clusterEnd }, mClusterSize{ clusterSize }, mDataPos{ dataPos }
+FAT::FAT( uint32_t pos, uint32_t size, uint32_t clusterEnd, uint32_t clusterSize, uint32_t dataPos ) : mClusters{}, mOriginalClusters{}, mPos{ pos }, mSize{ size }, mClusterEnd{ clusterEnd }, mClusterSize{ clusterSize }, mDataPos{ dataPos }
 {
 }
 
@@ -86,27 +87,75 @@ std::vector<uint16_t> FAT::findFreeClusters( uint32_t requiredClusters ) const
   return {};
 }
 
+void FAT::freeClusters( WriteTransaction & trans, uint16_t startCluster )
+{
+  trans.transaction( shared_from_this() );
+
+  uint16_t maxCluster = mClusters.size() > 4086 ? 0xfff0 : 0xff0;
+  
+  while ( startCluster > 0 && startCluster < maxCluster )
+  {
+    auto cluster = startCluster;
+  
+    if ( cluster > mClusters.size() )
+      throw Ex{} << "Cluster index " << cluster << " exceeds FAT size of " << mClusters.size();
+  
+    startCluster = 0;
+    std::swap( startCluster, mClusters[cluster] );
+  }
+}
+
+void FAT::beginTransaction()
+{
+  if ( mOriginalClusters.empty() )
+  {
+    mOriginalClusters.reserve( mClusters.size() );
+    std::copy( mClusters.begin(), mClusters.end(), std::back_inserter( mOriginalClusters ) );
+  }
+  else
+  {
+    throw Ex{} << "FAT begin transaction error";
+  }
+}
+
+void FAT::commitTransaction( RawVolume & volume )
+{
+  if ( mOriginalClusters.empty() )
+  {
+    throw Ex{} << "FAT commit transaction error";
+  }
+  else
+  {
+    for ( uint32_t i = 0; i < mSize; ++i )
+    {
+      static constexpr uint32_t clusterIndicesPerSector = RawVolume::RAW_SECTOR_SIZE / sizeof( uint16_t );
+      uint32_t off = i * clusterIndicesPerSector;
+      uint16_t const* orgBeg = mOriginalClusters.data() + off;
+      uint16_t const* orgEnd = orgBeg + clusterIndicesPerSector;
+      uint16_t const* traBeg = mClusters.data() + off;
+
+      if ( std::mismatch( orgBeg, orgEnd, traBeg ).first < orgEnd )
+      {
+        volume.writeSectors( mPos + i, 1, std::span<uint8_t const>{ (uint8_t const*)traBeg, RawVolume::RAW_SECTOR_SIZE } );
+      }
+    }
+  }
+}
+
+void FAT::endTransaction()
+{
+  if ( mOriginalClusters.empty() )
+  {
+    throw Ex{} << "FAT end transaction error";
+  }
+  else
+  {
+    mOriginalClusters.clear();
+  }
+}
+
 //WriteTransaction FAT::freeClusters( uint16_t startCluster )
 //{
-//  uint16_t maxCluster = mClusters.size() > 4086 ? 0xfff0 : 0xff0;
-//
-//  Modifier mod;
-//  std::vector<uint16_t> freed;
-//
-//  while ( startCluster > 0 && startCluster < maxCluster )
-//  {
-//    auto cluster = startCluster;
-//
-//    mod.add( cluster );
-//
-//    if ( cluster > mClusters.size() )
-//      throw Ex{} << "Cluster index " << cluster << " exceeds FAT size of " << mClusters.size();
-//
-//    startCluster = 0;
-//    std::swap( startCluster, mClusters[cluster] );
-//  }
-//
-//  return mod.commit( *this );
 //}
 //
 //void FAT::Modifier::add( uint16_t cluster )

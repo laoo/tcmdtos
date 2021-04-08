@@ -71,13 +71,11 @@ char * Dir::fullPath( char * it ) const
 cppcoro::generator<std::shared_ptr<DirEntry>> Dir::list()
 {
   auto baseFile = mBaseFile;
-  for ( std::span<int8_t const> block : mBaseFile->read() )
+  for ( SharedSpan block : mBaseFile->readCached() )
   {
-    assert( block.size() % sizeof( TOSDir ) == 0 );
-    size_t dirsInCluster = block.size() / sizeof( TOSDir );
-    auto tosBlock = std::make_shared<TOSDir[]>( dirsInCluster );
-    auto tosDirs = tosBlock.get();
-    std::copy( block.begin(), block.end(), std::bit_cast<int8_t*>( tosDirs ) );
+    assert( block.size % sizeof( TOSDir ) == 0 );
+    size_t dirsInCluster = block.size / sizeof( TOSDir );
+    auto tosDirs = (TOSDir*)block.data.get();
 
     for ( uint32_t i = 0; i < dirsInCluster; ++i )
     {
@@ -94,7 +92,7 @@ cppcoro::generator<std::shared_ptr<DirEntry>> Dir::list()
 
       if ( tosDir.fnameExt[0] != (char)0xe5 )
       {
-        co_yield std::make_shared<DirEntry>( std::shared_ptr<TOSDir>( tosBlock, &tosDir ), shared_from_this() );
+        co_yield std::make_shared<DirEntry>( std::shared_ptr<TOSDir>( block.data, &tosDir ), shared_from_this() );
       }
     }
   }

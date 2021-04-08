@@ -22,6 +22,7 @@ struct TOSDir
 
 class Dir;
 class BaseFile;
+class WriteTransaction;
 
 class DirEntry : public std::enable_shared_from_this<DirEntry>
 {
@@ -52,6 +53,8 @@ public:
 
   std::shared_ptr<Dir> openDir();
   std::shared_ptr<BaseFile> openFile();
+
+  void unlink( WriteTransaction & transaction );
 
   static constexpr uint8_t ATTR_READ_ONLY = 0x01;
   static constexpr uint8_t ATTR_HIDDEN = 0x02;

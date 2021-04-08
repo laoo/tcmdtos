@@ -10,6 +10,7 @@
     <ClCompile Include="File.cpp" />
     <ClCompile Include="Dir.cpp" />
     <ClCompile Include="DirEntry.cpp" />
+    <ClCompile Include="WriteTransaction.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.hpp" />
@@ -23,5 +24,6 @@
     <ClInclude Include="File.hpp" />
     <ClInclude Include="DirEntry.hpp" />
     <ClInclude Include="Dir.hpp" />
+    <ClInclude Include="WriteTransaction.hpp" />
   </ItemGroup>
 </Project>

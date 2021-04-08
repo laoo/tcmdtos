@@ -2,7 +2,9 @@
 #include "DirEntry.hpp"
 #include "Dir.hpp"
 #include "File.hpp"
+#include "FAT.hpp"
 #include "Ex.hpp"
+#include "WriteTransaction.hpp"
 
 char * DirEntry::nameWithExt( char * it ) const
 {
@@ -47,6 +49,23 @@ std::shared_ptr<BaseFile> DirEntry::openFile()
     return std::make_shared<File>( mDir->baseFile()->rawVolume(), mDir->baseFile()->fat(), shared_from_this() );
   else
     return {};
+}
+
+void DirEntry::unlink( WriteTransaction & transaction )
+{
+  if ( isDirectory() )
+  {
+    auto dir = openDir();
+    for ( auto e : dir->list() )
+    {
+      e->unlink( transaction );
+    }
+  }
+
+  auto fat = mDir->baseFile()->fat();
+  fat->freeClusters( transaction, mTOS->scluster );
+  transaction.transaction( mDir->baseFile() );
+  mTOS->fnameExt[0] = (char)0xe5;
 }
 
 DirEntry::DirEntry( std::shared_ptr<TOSDir> tos, std::shared_ptr<Dir> dir ) : mTOS{ std::move( tos ) }, mDir{ std::move( dir ) }

@@ -3,6 +3,8 @@
 #include "RawVolume.hpp"
 #include "Ex.hpp"
 #include "Dir.hpp"
+#include "DirEntry.hpp"
+#include "WriteTransaction.hpp"
 
 TosVolume::TosVolume( std::filesystem::path const & path ) : mRawVolume{ RawVolume::openImageFile( path ) }
 {
@@ -44,23 +46,30 @@ cppcoro::generator<std::shared_ptr<DirEntry>> TosVolume::find( char const * path
   return p->rootDir()->find( { &*(backSlash + 1), (size_t)std::distance( backSlash + 1, sv.end() ) } );
 }
 
-//bool TosVolume::unlink( char const * path ) const
-//{
-//  std::string_view sv{ path };
-//
-//  auto backSlash = std::find( sv.cbegin(), sv.cend(), '\\' );
-//
-//  if ( backSlash == sv.cend() )
-//    return false;
-//
-//  auto p = findPartition( { path, (size_t)std::distance( sv.cbegin(), backSlash ) } );
-//  if ( !p )
-//    return false;
-//
-//  auto elements = p->rootDir()->find( { &*( backSlash + 1 ), (size_t)std::distance( backSlash + 1, sv.end() ) } );
-//
-//  return p->unlink( elements );
-//}
+bool TosVolume::unlink( char const * path ) const
+{
+  std::string_view sv{ path };
+
+  auto backSlash = std::find( sv.cbegin(), sv.cend(), '\\' );
+
+  if ( backSlash == sv.cend() )
+    return false;
+
+  auto p = findPartition( { path, (size_t)std::distance( sv.cbegin(), backSlash ) } );
+  if ( !p )
+    return false;
+
+  WriteTransaction trans{};
+
+  auto dir = p->rootDir();
+  for ( auto e : dir->find( { &*( backSlash + 1 ), (size_t)std::distance( backSlash + 1, sv.end() ) } ) )
+  {
+    e->unlink( trans );
+  }
+
+  trans.commit( *mRawVolume );
+  return true;
+}
 
 std::shared_ptr<Partition> TosVolume::findPartition( std::string_view path ) const
 {

@@ -202,27 +202,27 @@ int __stdcall PackFiles( char * PackedFile, char * SubPath, char * SrcPath, char
 
 int __stdcall DeleteFiles( char * packedFile, char * deleteList )
 {
-  //try
-  //{
-  //  TosVolume volume{ packedFile };
+  try
+  {
+    TosVolume volume{ packedFile };
 
-  //  if ( !deleteList )
-  //    return E_NO_FILES;
+    if ( !deleteList )
+      return E_NO_FILES;
 
-  //  while ( *deleteList )
-  //  {
-  //    if ( !volume.unlink( deleteList ) )
-  //    {
-  //      return E_NO_FILES;
-  //    }
-  //    
-  //    auto size = strlen( deleteList );
-  //    deleteList += size + 1;
-  //  }
+    while ( *deleteList )
+    {
+      if ( !volume.unlink( deleteList ) )
+      {
+        return E_NO_FILES;
+      }
+      
+      auto size = strlen( deleteList );
+      deleteList += size + 1;
+    }
 
-  //  return 0;
-  //}
-  //catch ( [[maybe_unused]] Ex const & ex )
+    return 0;
+  }
+  catch ( [[maybe_unused]] Ex const & ex )
   {
     return E_BAD_ARCHIVE;
   }
