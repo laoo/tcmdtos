@@ -173,7 +173,9 @@
     <ClInclude Include="Log.hpp" />
     <ClInclude Include="pch.hpp" />
     <ClInclude Include="RawVolume.hpp" />
+    <ClInclude Include="TOSDir.hpp" />
     <ClInclude Include="TosVolume.hpp" />
+    <ClInclude Include="Utils.hpp" />
     <ClInclude Include="WriteTransaction.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -190,7 +192,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="RawVolume.cpp" />
+    <ClCompile Include="TOSDir.cpp" />
     <ClCompile Include="TosVolume.cpp" />
+    <ClCompile Include="Utils.cpp" />
     <ClCompile Include="WriteTransaction.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

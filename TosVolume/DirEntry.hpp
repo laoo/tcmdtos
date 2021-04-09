@@ -2,24 +2,7 @@
 
 #include <array>
 
-#pragma pack(push, 1)
-struct TOSDir
-{
-  TOSDir() : fnameExt{}, attrib{}, res{}, ftime{}, fdate{}, scluster{}, fsize{}
-  {
-    std::fill( fnameExt.begin(), fnameExt.end(), ' ' );
-  }
-
-  std::array<char, 11> fnameExt;
-  uint8_t attrib;
-  std::array<uint8_t, 10> res;
-  uint16_t ftime;
-  uint16_t fdate;
-  uint16_t scluster;
-  uint32_t fsize;
-};
-#pragma pack(pop)
-
+struct TOSDir;
 class Dir;
 class BaseFile;
 class WriteTransaction;
@@ -56,13 +39,6 @@ public:
   std::shared_ptr<BaseFile> openFile();
 
   void unlink( WriteTransaction & transaction );
-
-  static constexpr uint8_t ATTR_READ_ONLY = 0x01;
-  static constexpr uint8_t ATTR_HIDDEN = 0x02;
-  static constexpr uint8_t ATTR_SYSTEM = 0x04;
-  static constexpr uint8_t ATTR_LABEL = 0x08;
-  static constexpr uint8_t ATTR_DIRECTORY = 0x10;
-  static constexpr uint8_t ATTR_NEW = 0x20;
 
 private:
   std::shared_ptr<TOSDir> mTOS;

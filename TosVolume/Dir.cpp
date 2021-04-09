@@ -2,6 +2,8 @@
 #include "Dir.hpp"
 #include "File.hpp"
 #include "DirEntry.hpp"
+#include "Utils.hpp"
+#include "TOSDir.hpp"
 
 namespace
 {
@@ -19,30 +21,6 @@ bool match( std::array<char, 11> const & left, std::array<char, 11> const & righ
   return true;
 }
 
-void extractNameExt( std::string_view src, std::array<char, 11> & nameExt )
-{
-  std::fill( nameExt.begin(), nameExt.end(), ' ' );
-
-  size_t pos = 0;
-  for ( auto c : src )
-  {
-    if ( c == '.' )
-    {
-      nameExt[8] = nameExt[9] = nameExt[10] = ' ';
-      pos = 8;
-    }
-    else if ( c == '*' )
-    {
-      while ( pos < nameExt.size() )
-        nameExt[pos++] = '?';
-    }
-    else if ( pos < nameExt.size() )
-    {
-      nameExt[pos++] = c;
-    }
-  }
-}
-
 std::string_view extractNameExtRest( std::string_view src, std::array<char, 11> & nameExt )
 {
   auto backSlash = std::find( src.cbegin(), src.cend(), '\\' );
@@ -56,7 +34,6 @@ std::string_view extractNameExtRest( std::string_view src, std::array<char, 11> 
 }
 
 }
-
 
 Dir::Dir( std::shared_ptr<BaseFile> baseFile ) : mBaseFile{ std::move( baseFile ) }
 {

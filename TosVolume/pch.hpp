@@ -10,6 +10,8 @@
 #include <span>
 #include <cassert>
 #include <limits>
+#include <chrono>
+#include <fstream>
 
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN

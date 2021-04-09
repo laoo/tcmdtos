@@ -11,6 +11,8 @@
     <ClCompile Include="Dir.cpp" />
     <ClCompile Include="DirEntry.cpp" />
     <ClCompile Include="WriteTransaction.cpp" />
+    <ClCompile Include="TOSDir.cpp" />
+    <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.hpp" />
@@ -25,5 +27,7 @@
     <ClInclude Include="DirEntry.hpp" />
     <ClInclude Include="Dir.hpp" />
     <ClInclude Include="WriteTransaction.hpp" />
+    <ClInclude Include="TOSDir.hpp" />
+    <ClInclude Include="Utils.hpp" />
   </ItemGroup>
 </Project>

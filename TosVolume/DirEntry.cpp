@@ -1,10 +1,17 @@
 #include "pch.hpp"
 #include "DirEntry.hpp"
 #include "Dir.hpp"
+#include "TOSDir.hpp"
 #include "File.hpp"
 #include "FAT.hpp"
 #include "Ex.hpp"
 #include "WriteTransaction.hpp"
+
+DirEntry::DirEntry( std::shared_ptr<TOSDir> tos, std::shared_ptr<Dir> dir ) : mTOS{ std::move( tos ) }, mDir{ std::move( dir ) }
+{
+  if ( !mTOS )
+    throw Ex{} << "Empty TOS directory entry";
+}
 
 char * DirEntry::nameWithExt( char * it ) const
 {
@@ -68,70 +75,54 @@ void DirEntry::unlink( WriteTransaction & transaction )
   mTOS->fnameExt[0] = (char)0xe5;
 }
 
-DirEntry::DirEntry( std::shared_ptr<TOSDir> tos, std::shared_ptr<Dir> dir ) : mTOS{ std::move( tos ) }, mDir{ std::move( dir ) }
-{
-  if ( !mTOS )
-    throw Ex{} << "Empty TOS directory entry";
-}
-
 uint32_t DirEntry::getYear() const
 {
-  return ( ( mTOS->fdate & 0b1111111000000000 ) >> 9 ) + 1980;
+  return mTOS->getYear();
 }
 
 uint32_t DirEntry::getMonth() const
 {
-  return ( mTOS->fdate & 0b0000000111100000 ) >> 5;
+  return mTOS->getMonth();
 }
 
 uint32_t DirEntry::getDay() const
 {
-  return ( mTOS->fdate & 0b0000000000011111 );
+  return mTOS->getDay();
 }
 
 uint32_t DirEntry::getHour() const
 {
-  return ( mTOS->ftime & 0b1111100000000000 ) >> 11;
+  return mTOS->getHour();
 }
 
 uint32_t DirEntry::getMinute() const
 {
-  return ( mTOS->ftime & 0b0000011111100000 ) >> 5;
+  return mTOS->getMinute();
 }
 
 uint32_t DirEntry::getSecond() const
 {
-  return ( mTOS->ftime & 0b0000000000011111 ) * 2;
+  return mTOS->getSecond();
 }
 
 uint16_t DirEntry::getCluster() const
 {
-  return mTOS->scluster;
+  return mTOS->getCluster();
 }
 
 uint32_t DirEntry::getSizeInBytes() const
 {
-  return mTOS->fsize;
+  return mTOS->getSizeInBytes();
 }
 
 std::string_view DirEntry::getName() const
 {
-  std::string_view sv{ mTOS->fnameExt.data(), 8 };
-  auto pos = sv.find_last_not_of( ' ' );
-  if ( pos == std::string_view::npos )
-    return sv;
-  else
-    return std::string_view{ mTOS->fnameExt.data(), pos + 1 };
+  return mTOS->getName();
 }
 
 std::string_view DirEntry::getExt() const
 {
-  std::string_view sv{ mTOS->fnameExt.data() + 8, 3 };
-  auto pos = sv.find_last_not_of( ' ' );
-  if ( pos == std::string_view::npos )
-    return {};
-  else
-    return std::string_view{ mTOS->fnameExt.data() + 8, pos + 1 };
+  return mTOS->getExt();
 }
 
 std::string DirEntry::nameWithExt() const
@@ -152,35 +143,36 @@ std::string DirEntry::nameWithExt() const
 
 std::array<char, 11> const& DirEntry::getNameExtArray() const
 {
-  return mTOS->fnameExt;
+  return mTOS->getNameExtArray();
 }
 
 bool DirEntry::isReadOnly() const
 {
-  return ( mTOS->attrib & ATTR_READ_ONLY ) != 0;
+  return mTOS->isReadOnly();
 }
 
 bool DirEntry::isHidden() const
 {
-  return ( mTOS->attrib & ATTR_HIDDEN ) != 0;
+  return mTOS->isHidden();
 }
 
 bool DirEntry::isSystem() const
 {
-  return ( mTOS->attrib & ATTR_SYSTEM ) != 0;
+  return mTOS->isSystem();
 }
 
 bool DirEntry::isLabel() const
 {
-  return ( mTOS->attrib & ATTR_LABEL ) != 0;
+  return mTOS->isLabel();
 }
 
 bool DirEntry::isDirectory() const
 {
-  return ( mTOS->attrib & ATTR_DIRECTORY ) != 0;
+  return mTOS->isDirectory();
 }
 
 bool DirEntry::isNew() const
 {
-  return ( mTOS->attrib & ATTR_NEW ) != 0;
+  return mTOS->isNew();
 }
+

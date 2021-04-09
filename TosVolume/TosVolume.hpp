@@ -13,8 +13,8 @@ public:
 
   cppcoro::generator<std::shared_ptr<DirEntry>> find( std::string_view fullPath ) const;
 
-  bool mkdir( std::string_view fullPath );
-  bool add( std::string_view src, std::string_view parent, std::string_view dst );
+  //bool mkdir( std::string_view fullPath );
+  bool add( std::string_view dstFolder, std::string_view srcFolder, std::string_view path );
   bool unlink( std::string_view path ) const;
 
 private:
@@ -30,6 +30,7 @@ private:
   void parseGEMPartition( PInfo const& partition, uint32_t offset = 0 );
   void parseBGMPartition( PInfo const& partition, uint32_t offset = 0 );
   void parseXGMPartition( PInfo const& partition, uint32_t offset = 0 );
+
 
 private:
   std::shared_ptr<RawVolume> mRawVolume;

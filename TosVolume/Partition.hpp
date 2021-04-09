@@ -6,6 +6,7 @@ class Dir;
 class RawVolume;
 class FAT;
 class BaseFile;
+struct TOSDir;
 
 class PInfo
 {
@@ -40,6 +41,7 @@ public:
   int number() const;
 
   std::shared_ptr<Dir> rootDir();
+  bool add( std::string_view dstFolder, std::vector<TOSDir> const & path, std::function<std::span<uint8_t const>()> const & dataSource );
 
 private:
   friend class DirectoryEntry;

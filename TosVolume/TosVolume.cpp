@@ -3,8 +3,86 @@
 #include "RawVolume.hpp"
 #include "Ex.hpp"
 #include "Dir.hpp"
+#include "TOSDir.hpp"
 #include "DirEntry.hpp"
 #include "WriteTransaction.hpp"
+
+namespace
+{
+
+bool createTOSDirPrototype( std::filesystem::path const & path, TOSDir & out )
+{
+
+  std::shared_ptr<void> handle{ CreateFile( path.generic_wstring().c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL ), &CloseHandle };
+
+  if ( handle.get() == INVALID_HANDLE_VALUE )
+  {
+    int x = GetLastError();
+    return false;
+  }
+
+  BY_HANDLE_FILE_INFORMATION fileInfo;
+
+  if ( !GetFileInformationByHandle( handle.get(), &fileInfo ) )
+    return false;
+
+  if ( fileInfo.nFileSizeHigh > 0 )
+    return false;
+
+  out.setSizeInBytes( fileInfo.nFileSizeLow );
+
+  auto strPath = path.string();
+  char buf[MAX_PATH];
+  GetShortPathNameA( strPath.c_str(), buf, MAX_PATH );
+  std::filesystem::path shortPath{ buf };
+  auto filename = shortPath.filename().string();
+
+  out.setNameExt( std::string_view{ filename } );
+  out.setDirectory( ( fileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) != 0 );
+  out.setHidden( ( fileInfo.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN ) != 0 );
+  out.setReadOnly( ( fileInfo.dwFileAttributes & FILE_ATTRIBUTE_READONLY ) != 0 );
+  out.setSystem( ( fileInfo.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM ) != 0 );
+
+  SYSTEMTIME sysTime;
+  if ( !FileTimeToSystemTime( &fileInfo.ftLastWriteTime, &sysTime ) )
+    return false;
+
+  out.setYear( sysTime.wYear );
+  out.setMonth( sysTime.wMonth );
+  out.setDay( sysTime.wDay );
+  out.setHour( sysTime.wHour );
+  out.setMinute( sysTime.wMinute );
+  out.setSecond( sysTime.wSecond );
+
+  return true;
+}
+
+bool createTOSDirPrototypes( std::filesystem::path const & parentFolder, std::filesystem::path path, std::vector<TOSDir> & out )
+{
+  auto parent = path.parent_path();
+  if ( parent.empty() )
+    return false;
+
+  if ( std::filesystem::equivalent( parentFolder, parent ) )
+  {
+    out.push_back( {} );
+    return createTOSDirPrototype( path, out.back() );
+  }
+  else
+  {
+    if ( createTOSDirPrototypes( parentFolder, parent, out ) )
+    {
+      out.push_back( {} );
+      return createTOSDirPrototype( path, out.back() );
+    }
+    else
+    {
+      return false;
+    }
+  }
+}
+
+}
 
 TosVolume::TosVolume( std::filesystem::path const & path ) : mRawVolume{ RawVolume::openImageFile( path ) }
 {
@@ -40,31 +118,73 @@ cppcoro::generator<std::shared_ptr<DirEntry>> TosVolume::find( std::string_view 
     return {};
 }
 
-bool TosVolume::add( std::string_view src, std::string_view parent, std::string_view dst )
+bool TosVolume::add( std::string_view dstFolder, std::string_view srcFolder, std::string_view path )
 {
-  auto [p, right] = findPartition( parent );
+  auto [p, right] = findPartition( dstFolder );
 
-  return false;
-}
+  if ( !p )
+    return false;
 
-bool TosVolume::mkdir( std::string_view fullPath )
-{
-  auto [p, right] = findPartition( fullPath );
+  if ( path.empty() )
+    return false;
 
-  if ( p )
+  if ( path.back() == '\\' )
+    path = { path.data(), path.size() - 1 };
+
+  std::filesystem::path fullSrcPath{ srcFolder };
+  fullSrcPath /= path;
+
+  std::vector<TOSDir> dirs;
+
+  if ( !createTOSDirPrototypes( std::filesystem::path{ srcFolder }, fullSrcPath, dirs ) )
+    return false;
+
+  if ( dirs.back().isDirectory() )
   {
-    WriteTransaction trans{};
-    auto dir = p->rootDir();
-    if ( dir->mkdirs( trans, right ) )
-    {
-      trans.commit( *mRawVolume );
-    }
+    p->add( dstFolder, dirs, []() {
+      return std::span<uint8_t const>{};
+    } );
   }
   else
   {
-    return false;
+    std::ifstream fin{ fullSrcPath, std::ios::binary };
+    std::array<uint8_t, RawVolume::RAW_SECTOR_SIZE> buf;
+
+    p->add( right, dirs, [&]()
+    {
+      if ( fin.good() )
+      {
+        fin.read( (char *)buf.data(), buf.size() );
+        return std::span<uint8_t const>{ buf.data(), (size_t)fin.gcount() };
+      }
+      else
+      {
+        return std::span<uint8_t const>{};
+      }
+    } );
   }
+
+  return true;
 }
+
+//bool TosVolume::mkdir( std::string_view fullPath )
+//{
+//  auto [p, right] = findPartition( fullPath );
+//
+//  if ( p )
+//  {
+//    WriteTransaction trans{};
+//    auto dir = p->rootDir();
+//    if ( dir->mkdirs( trans, right ) )
+//    {
+//      trans.commit( *mRawVolume );
+//    }
+//  }
+//  else
+//  {
+//    return false;
+//  }
+//}
 
 bool TosVolume::unlink( std::string_view fullPath ) const
 {

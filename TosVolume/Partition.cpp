@@ -7,6 +7,7 @@
 #include "File.hpp"
 #include "DirEntry.hpp"
 #include "Dir.hpp"
+#include "TOSDir.hpp"
 
 bool PInfo::exists() const
 {
@@ -76,26 +77,34 @@ std::shared_ptr<Dir> Partition::rootDir()
   return std::make_shared<Dir>( rootDirFile() );
 }
 
+bool Partition::add( std::string_view dstFolder, std::vector<TOSDir> const & path, std::function<std::span<uint8_t const>()> const & dataSource )
+{
+  return false;
+}
+
 std::shared_ptr<BaseFile> Partition::rootDirFile() const
 {
   auto pTOS = std::make_shared<TOSDir>();
 
-  pTOS->fnameExt[0] = '0' + ( number() / 10 ) % 10;
-  pTOS->fnameExt[1] = '0' + number() % 10;
+  std::stringstream ss;
+
+  ss << std::setw( 2 ) << std::setfill( '0' ) << number();
 
   switch ( type() )
   {
   case PInfo::Type::GEM:
-    std::copy_n( "GEM", 3, pTOS->fnameExt.begin() + 8 );
+    ss << ".GEM";
     break;
   case PInfo::Type::BGM:
-    std::copy_n( "BGM", 3, pTOS->fnameExt.begin() + 8 );
+    ss << ".BGM";
     break;
   default:
     assert( false );
     break;
   }
-  pTOS->attrib = DirEntry::ATTR_DIRECTORY;
+
+  pTOS->setNameExt( ss.str() );
+  pTOS->setDirectory( true );
 
   auto dirEntry = std::make_shared<DirEntry>( pTOS, std::shared_ptr<Dir>{} );
 

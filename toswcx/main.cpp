@@ -206,36 +206,9 @@ int __stdcall PackFiles( char * packedFile, char * subPath, char * srcPath, char
 
     while ( *addList )
     {
-      std::filesystem::path src{ srcPath };
-      src /= addList;
-      std::filesystem::path dst{ subPath };
-      dst /= addList;
-
-      if ( !std::filesystem::exists( src ) )
-        return E_EOPEN;
-
-
-      if ( std::filesystem::is_directory( src ) )
+      if ( !volume.add( std::string_view{ subPath }, std::string_view{ srcPath }, std::string_view{ addList } ) )
       {
-        auto dststr = src.string();
-
-        if ( !volume.mkdir( std::string_view{ dststr } ) )
-        {
-          return E_ECREATE;
-        }
-      }
-      else
-      {
-        auto srcstr = src.string();
-        auto parent = dst.parent_path();
-        auto leaf = dst.filename();
-        auto dstpar = parent.string();
-        auto dstlea = leaf.string();
-
-        if ( !volume.add( std::string_view{ srcstr }, std::string_view{ dstpar }, std::string_view{ dstlea } ) )
-        {
-          return E_ECREATE;
-        }
+        return E_ECREATE;
       }
 
       auto size = strlen( addList );
