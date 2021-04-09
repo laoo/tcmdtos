@@ -58,6 +58,11 @@ cppcoro::generator<SharedSpan<int8_t>> RootDirFile::readCached()
   }
 }
 
+bool RootDirFile::extendFile( WriteTransaction & transaction )
+{
+  return false;
+}
+
 void RootDirFile::beginTransaction()
 {
   if ( !mOriginalCache )
@@ -165,6 +170,16 @@ cppcoro::generator<SharedSpan<int8_t>> File::readCached()
       co_yield mCache.back();
     }
   }
+}
+
+bool File::extendFile( WriteTransaction & transaction )
+{
+  if ( mDirEntry && mFAT )
+  {
+    return mFAT->appendCluster( transaction, mDirEntry->getCluster() );
+  }
+
+  return false;
 }
 
 void File::beginTransaction()

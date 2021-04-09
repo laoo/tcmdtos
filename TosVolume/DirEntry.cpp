@@ -134,6 +134,22 @@ std::string_view DirEntry::getExt() const
     return std::string_view{ mTOS->fnameExt.data() + 8, pos + 1 };
 }
 
+std::string DirEntry::nameWithExt() const
+{
+  std::string result;
+  auto name = getName();
+  auto ext = getExt();
+
+  result.append( name );
+  if ( !ext.empty() )
+  {
+    result.append( "." );
+    result.append( ext );
+  }
+
+  return result;
+}
+
 std::array<char, 11> const& DirEntry::getNameExtArray() const
 {
   return mTOS->fnameExt;

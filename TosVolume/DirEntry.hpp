@@ -39,6 +39,7 @@ public:
   uint32_t getSizeInBytes() const;
   std::string_view getName() const;
   std::string_view getExt() const;
+  std::string nameWithExt() const;
   std::array<char, 11> const& getNameExtArray() const;
 
   bool isReadOnly() const;

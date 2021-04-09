@@ -11,11 +11,14 @@ public:
 
   std::span<std::shared_ptr<Partition> const> partitions() const;
 
-  cppcoro::generator<std::shared_ptr<DirEntry>> find( char const* path ) const;
-  bool unlink( char const* path ) const;
+  cppcoro::generator<std::shared_ptr<DirEntry>> find( std::string_view fullPath ) const;
+
+  bool mkdir( std::string_view fullPath );
+  bool add( std::string_view src, std::string_view parent, std::string_view dst );
+  bool unlink( std::string_view path ) const;
 
 private:
-  std::shared_ptr<Partition> findPartition( std::string_view path ) const;
+  std::pair<std::shared_ptr<Partition>, std::string_view> findPartition( std::string_view path ) const;
 
 private:
 

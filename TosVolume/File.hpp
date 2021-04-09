@@ -7,6 +7,7 @@
 class RawVolume;
 class FAT;
 class DirEntry;
+class WriteTransaction;
 
 template<typename T>
 struct SharedSpan
@@ -29,6 +30,7 @@ public:
   virtual std::shared_ptr<DirEntry> dirEntry() const;
   virtual cppcoro::generator<std::span<int8_t const>> read() const = 0;
   virtual cppcoro::generator<SharedSpan<int8_t>> readCached() = 0;
+  virtual bool extendFile( WriteTransaction & transaction ) = 0;
 
   char * fullPath( char * it ) const;
 
@@ -49,6 +51,7 @@ public:
 
   cppcoro::generator<std::span<int8_t const>> read() const override;
   cppcoro::generator<SharedSpan<int8_t>> readCached() override;
+  bool extendFile( WriteTransaction & transaction ) override;
 
   void beginTransaction() override;
   void commitTransaction( RawVolume & volume ) override;
@@ -69,6 +72,7 @@ public:
 
   cppcoro::generator<std::span<int8_t const>> read() const override;
   cppcoro::generator<SharedSpan<int8_t>> readCached() override;
+  bool extendFile( WriteTransaction & transaction ) override;
 
   void beginTransaction() override;
   void commitTransaction( RawVolume & volume ) override;

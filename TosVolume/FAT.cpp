@@ -27,7 +27,7 @@ uint32_t FAT::dataPos() const
 
 cppcoro::generator<uint16_t> FAT::fileClusters( uint16_t cluster ) const
 {
-  uint16_t maxCluster = mClusters.size() > 4086 ? 0xfff0 : 0xff0;
+  uint16_t maxCluster = maxClusterValue();
 
   while ( cluster > 0 && cluster < maxCluster )
   {
@@ -87,12 +87,25 @@ std::vector<uint16_t> FAT::findFreeClusters( uint32_t requiredClusters ) const
   return {};
 }
 
+uint16_t FAT::findFirstFreeCluster() const
+{
+  for ( uint16_t i = 2; i < mClusterEnd; ++i )
+  {
+    if ( mClusters[i] == 0 )
+    {
+      return i;
+    }
+  }
+
+  return 0;
+}
+
 void FAT::freeClusters( WriteTransaction & trans, uint16_t startCluster )
 {
   trans.transaction( shared_from_this() );
 
-  uint16_t maxCluster = mClusters.size() > 4086 ? 0xfff0 : 0xff0;
-  
+  uint16_t maxCluster = maxClusterValue();
+
   while ( startCluster > 0 && startCluster < maxCluster )
   {
     auto cluster = startCluster;
@@ -103,6 +116,23 @@ void FAT::freeClusters( WriteTransaction & trans, uint16_t startCluster )
     startCluster = 0;
     std::swap( startCluster, mClusters[cluster] );
   }
+}
+
+bool FAT::appendCluster( WriteTransaction & trans, uint16_t startCluster )
+{
+  trans.transaction( shared_from_this() );
+
+  if ( auto lastCluster = findLastCluster( startCluster ) )
+  {
+    if ( auto freeCluster = findFirstFreeCluster() )
+    {
+      mClusters[freeCluster] = lastClusterValue();
+      mClusters[lastCluster] = freeCluster;
+      return true;
+    }
+  }
+
+  return false;
 }
 
 void FAT::beginTransaction()
@@ -154,10 +184,35 @@ void FAT::endTransaction()
   }
 }
 
-//WriteTransaction FAT::freeClusters( uint16_t startCluster )
-//{
-//}
-//
+uint16_t FAT::findLastCluster( uint16_t cluster ) const
+{
+  uint16_t maxCluster = maxClusterValue();
+  uint16_t lastCluster = lastClusterValue();
+
+  while ( cluster > 0 && cluster < maxCluster )
+  {
+    if ( cluster > mClusters.size() )
+      throw Ex{} << "Cluster index " << cluster << " exceeds FAT size of " << mClusters.size();
+
+    cluster = mClusters[cluster];
+  }
+
+  if ( cluster != lastCluster )
+    return 0;
+
+  return cluster;
+}
+
+uint16_t FAT::maxClusterValue() const
+{
+  return mClusters.size() > 4086 ? 0xfff0 : 0xff0;
+}
+
+uint16_t FAT::lastClusterValue() const
+{
+  return mClusters.size() > 4086 ? 0xffff : 0xfff;
+}
+
 //void FAT::Modifier::add( uint16_t cluster )
 //{
 //  auto ub = std::upper_bound( mModified.begin(), mModified.end(), cluster );

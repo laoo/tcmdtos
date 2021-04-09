@@ -30,58 +30,84 @@ std::span<std::shared_ptr<Partition>const> TosVolume::partitions() const
   return { mPartitions.data(), mPartitions.size() };
 }
 
-cppcoro::generator<std::shared_ptr<DirEntry>> TosVolume::find( char const * path ) const
+cppcoro::generator<std::shared_ptr<DirEntry>> TosVolume::find( std::string_view fullPath ) const
 {
-  std::string_view sv{ path };
+  auto [p, right] = findPartition( fullPath );
 
-  auto backSlash = std::find( sv.cbegin(), sv.cend(), '\\' );
-
-  if ( backSlash == sv.cend() )
+  if ( p )
+    return p->rootDir()->find( right );
+  else
     return {};
-
-  auto p = findPartition( { path, (size_t)std::distance( sv.cbegin(), backSlash ) } );
-  if ( !p )
-    return {};
-
-  return p->rootDir()->find( { &*(backSlash + 1), (size_t)std::distance( backSlash + 1, sv.end() ) } );
 }
 
-bool TosVolume::unlink( char const * path ) const
+bool TosVolume::add( std::string_view src, std::string_view parent, std::string_view dst )
 {
-  std::string_view sv{ path };
+  auto [p, right] = findPartition( parent );
 
-  auto backSlash = std::find( sv.cbegin(), sv.cend(), '\\' );
+  return false;
+}
 
-  if ( backSlash == sv.cend() )
-    return false;
+bool TosVolume::mkdir( std::string_view fullPath )
+{
+  auto [p, right] = findPartition( fullPath );
 
-  auto p = findPartition( { path, (size_t)std::distance( sv.cbegin(), backSlash ) } );
-  if ( !p )
-    return false;
-
-  WriteTransaction trans{};
-
-  auto dir = p->rootDir();
-  for ( auto e : dir->find( { &*( backSlash + 1 ), (size_t)std::distance( backSlash + 1, sv.end() ) } ) )
+  if ( p )
   {
-    e->unlink( trans );
+    WriteTransaction trans{};
+    auto dir = p->rootDir();
+    if ( dir->mkdirs( trans, right ) )
+    {
+      trans.commit( *mRawVolume );
+    }
   }
-
-  trans.commit( *mRawVolume );
-  return true;
+  else
+  {
+    return false;
+  }
 }
 
-std::shared_ptr<Partition> TosVolume::findPartition( std::string_view path ) const
+bool TosVolume::unlink( std::string_view fullPath ) const
 {
-  if ( path.size() < 2 )
+  auto [p, right] = findPartition( fullPath );
+
+  if ( p )
+  {
+    WriteTransaction trans{};
+
+    auto dir = p->rootDir();
+    for ( auto e : dir->find( right ) )
+    {
+      e->unlink( trans );
+    }
+
+    trans.commit( *mRawVolume );
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+std::pair<std::shared_ptr<Partition>, std::string_view> TosVolume::findPartition( std::string_view path ) const
+{
+  auto backSlash = std::find( path.cbegin(), path.cend(), '\\' );
+
+  if ( backSlash == path.cend() )
     return {};
 
-  int partitionNumber = stoi( std::string{ path.cbegin(), path.cbegin() + 2 } );
+  std::string_view left{ path.data(), (size_t)std::distance( path.cbegin(), backSlash ) };
+  std::string_view right{ &*( backSlash + 1 ), (size_t)std::distance( backSlash + 1, path.end() ) };
+
+  if ( left.size() < 2 )
+    return {};
+
+  int partitionNumber = stoi( std::string{ left.cbegin(), left.cbegin() + 2 } );
 
   if ( partitionNumber < 0 || partitionNumber >= mPartitions.size() )
     return {};
 
-  return mPartitions[partitionNumber];
+  return { mPartitions[partitionNumber], right };
 }
 
 void TosVolume::parseRootSector()

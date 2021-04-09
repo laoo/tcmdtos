@@ -68,9 +68,86 @@ char * Dir::fullPath( char * it ) const
   return mBaseFile->fullPath( it );
 }
 
+bool Dir::mkdirs( WriteTransaction & transaction, std::string_view path )
+{
+  auto backSlash = std::find( path.cbegin(), path.cend(), '\\' );
+
+  if ( backSlash != path.cend() )
+  {
+    std::string_view left{ path.data(), (size_t)std::distance( path.cbegin(), backSlash ) };
+    std::string_view right{ &*( backSlash + 1 ), (size_t)std::distance( backSlash + 1, path.end() ) };
+
+    for ( auto dirEntry : list() )
+    {
+      if ( dirEntry->nameWithExt() == left )
+      {
+        return dirEntry->openDir()->mkdirs( transaction, right );
+      }
+    }
+
+    if ( auto newDir = mkdir( transaction, left ) )
+    {
+      return newDir->openDir()->mkdirs( transaction, right );
+    }
+  }
+  else
+  {
+    return (bool)mkdir( transaction, path );
+  }
+
+  return false;
+}
+
+std::shared_ptr<DirEntry> Dir::mkdir( WriteTransaction & transaction, std::string_view path )
+{
+  do
+  {
+    if ( auto slot = findEmptySlot() )
+    {
+
+    }
+
+  } while ( appendCluster() );
+
+  return {};
+}
+
+std::shared_ptr<DirEntry> Dir::findEmptySlot()
+{
+  for ( SharedSpan block : mBaseFile->readCached() )
+  {
+    assert( block.size % sizeof( TOSDir ) == 0 );
+    size_t dirsInCluster = block.size / sizeof( TOSDir );
+    auto tosDirs = (TOSDir *)block.data.get();
+
+    for ( uint32_t i = 0; i < dirsInCluster; ++i )
+    {
+      TOSDir & tosDir = tosDirs[i];
+
+      if ( tosDir.fnameExt[0] == 0 )
+        return std::make_shared<DirEntry>( std::shared_ptr<TOSDir>( block.data, &tosDir ), shared_from_this() );
+
+      static constexpr std::array<char, 11> dot1 = { '.',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ' };
+      static constexpr std::array<char, 11> dot2 = { '.','.',' ',' ',' ',' ',' ',' ',' ',' ',' ' };
+
+      if ( match( tosDir.fnameExt, dot1 ) || match( tosDir.fnameExt, dot2 ) )
+        continue;
+
+      if ( tosDir.fnameExt[0] == (char)0xe5 )
+        return std::make_shared<DirEntry>( std::shared_ptr<TOSDir>( block.data, &tosDir ), shared_from_this() );
+    }
+  }
+
+  return {};
+}
+
+bool Dir::appendCluster()
+{
+  return false;
+}
+
 cppcoro::generator<std::shared_ptr<DirEntry>> Dir::list()
 {
-  auto baseFile = mBaseFile;
   for ( SharedSpan block : mBaseFile->readCached() )
   {
     assert( block.size % sizeof( TOSDir ) == 0 );
